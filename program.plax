@@ -1,0 +1,15 @@
+import ['sys.lib']
+
+@comida    'Lasanha Ola'   
+@carro    'volkswagem'   
+@sexo    'masculino'
+
+case comida -EL 'hamburguer' (
+	screen ['É um hamburguer']
+) : (
+	screen ['Não é um hamburguer']
+)
+
+
+	
+	

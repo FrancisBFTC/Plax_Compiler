@@ -150,11 +150,18 @@ int main(int argc, char** argv) {
                 return 1;
             }
 
+            int ext_index = 0;
+            int text_index = 0;
+
             assembly["global"][0] = "main";
-            assembly["extern"][0] = "ExitProcess";
-            assembly["text"][0] = "main:";
+            assembly["extern"][ext_index++] = "ExitProcess";
+            assembly["extern"][ext_index++] = "malloc";
+            assembly["extern"][ext_index++] = "realloc";
+            assembly["text"][text_index++] = "main:";
 
             int i = 0;
+            int bss = 0;
+            
             while((fgets(line, sizeof(line), file_read)) != NULL){
                 if(contains(line, "@") && contains(line, ":")){
                     string str = getString(line);
@@ -178,6 +185,11 @@ int main(int argc, char** argv) {
                             }
                         }
                     }
+                    
+                    bool exist_var = false;
+
+                    if(!assembly["vars"][var].is_null())
+                        exist_var = true;
 
                     assembly["vars"][var] = str.c_str();
 
@@ -185,21 +197,24 @@ int main(int argc, char** argv) {
                     bool variable = false;
                     char op;
                     int count_op = 0;
-                    for(int i = 0; i < str.length(); i++){ 
+                    for(int i = 0; i < str.length(); i++){
+                        variable = false;
+
                         if(str[i] == '@'){
                             variable = true;
                             ++i;
                         }
                         
-                        while(i < str.length() && str[i] != '+' && str[i] != '-' && str[i] != '*' && str[i] != '/')
-                        {
-                            var_name << str[i];
-                            i++;
-                        }
-
-                        op = str[i];
-                        
                         if(variable){
+
+                            while(i < str.length() && str[i] != '+' && str[i] != '-' && str[i] != '*' && str[i] != '/')
+                            {
+                                var_name << str[i];
+                                i++;
+                            }
+
+                            op = str[i];
+
                             string type = assembly["type_vars"][var_name.str()];
                             string value = assembly["vars"][var_name.str()];
 
@@ -266,14 +281,81 @@ int main(int argc, char** argv) {
                             var_conc << var << ".size equ $ - " << var;
                             assembly["data"][++i] = var_conc.str();
                         }
+
+                        i++;
+                   }else{
+
+                        stringstream var_conc;
+                    
+                        if(!exist_var){
+                            if(isNumber(str)){
+                                var_conc << var << " dd " << str;
+                                assembly["data"][i] = var_conc.str();
+                                i++;
+                            }else{
+                                var_conc << "_" << var << "_" << " resd 1 ";
+                                assembly["bss"][bss++] = var_conc.str();
+                                assembly["realloc"][var] = false;
+                            }
+                        }else{
+                            
+                            if(isNumber(str)){
+                                var_conc << "mov DWORD[" << var << "], " << str;
+                                assembly["text"][text_index++] = var_conc.str();
+                            }else{
+                                var_conc << "_" << var << "_";
+
+                                stringstream push_inst;
+                                if(!assembly["realloc"][var]){
+                                    push_inst << "push " << str.length();
+                                    assembly["text"][text_index++] = push_inst.str();
+                                    assembly["text"][text_index++] = "call malloc";
+                                }else{
+                                    push_inst << "push " << str.length();
+                                    assembly["text"][text_index++] = push_inst.str();
+                                    push_inst.str("");
+                                    push_inst << "push DWORD[_" << var << "_]";
+                                    assembly["text"][text_index++] = push_inst.str();
+                                    assembly["text"][text_index++] = "call realloc";
+                                }
+
+                                stringstream addr_inst;
+                                addr_inst << "mov [" << var_conc.str() << "], eax";
+                                var_conc.str("");
+                                var_conc << var << "__" << i << " db '" << str << "',0";
+
+                                assembly["data"][i] = var_conc.str();
+                                var_conc.str("");
+
+                                var_conc << var << "__" << i << ".size equ $ - " << var << "__" << i;
+                                assembly["data"][++i] = var_conc.str();
+                                var_conc.str("");
+
+                                var_conc << "mov esi, [" << var << "__" << i-1 << "]"; 
+                                assembly["text"][text_index++] = addr_inst.str();
+                                assembly["text"][text_index++] = "mov edi, eax";
+                                assembly["text"][text_index++] = var_conc.str();
+                                var_conc.str("");
+
+                                var_conc << "mov ecx, " << str.length();
+                                assembly["text"][text_index++] = var_conc.str();
+                                assembly["text"][text_index++] = "rep movsb";
+
+                                i++;
+                            
+                                assembly["realloc"][var] = true;
+                            }
+                        }
                    }
 
-                    i++;
+                    
                 }
             }
 
-            assembly["text"][1] = "push 0";
-            assembly["text"][2] = "call ExitProcess";
+            
+
+            assembly["text"][text_index++] = "push 0";
+            assembly["text"][text_index++] = "call ExitProcess";
 
             fstream output;
             stringstream file;
@@ -305,11 +387,22 @@ int main(int argc, char** argv) {
 
             output << endl;
 
+
             for(int i = 0; i < assembly["text"].size(); i++){
                 if(i == 0)
                     output << "section .text" << endl << endl;
                 
                 code = assembly["text"][i];
+                output << code << endl;
+            }
+
+            output << endl;
+
+            for(int i = 0; i < assembly["bss"].size(); i++){
+                if(i == 0)
+                    output << "section .bss" << endl << endl;
+                
+                code = assembly["bss"][i];
                 output << code << endl;
             }
 
@@ -323,7 +416,7 @@ int main(int argc, char** argv) {
 
             //GoLink /console /entry main test.obj kernel32.dll user32.dll
             stringstream golink;
-            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2] << " kernel32.dll user32.dll";
+            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2] << " msvcrt.dll kernel32.dll user32.dll";
             string golink_cmd = golink.str();
             system(golink_cmd.c_str());
 

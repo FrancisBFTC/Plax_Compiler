@@ -12,3 +12,18 @@
 @num     : 6
 @valor   : 'Outra String'
 @num     : 8
+
+func MinhaFuncao  @nome, @idade, @cidade (
+
+    ? [] (
+        ? [] (
+
+        ) : (
+
+        )
+    ) : (
+        ? [] (
+            
+        )
+    )
+)

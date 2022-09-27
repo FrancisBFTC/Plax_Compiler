@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
 
             int ext_index = 0;
             int text_index = 0;
+            int text_funcs = 0;
 
             assembly["global"][0] = "main";
             assembly["extern"][ext_index++] = "ExitProcess";
@@ -161,6 +162,9 @@ int main(int argc, char** argv) {
 
             int i = 0;
             int bss = 0;
+
+            int index_symbol = 0;
+            bool is_func = false;
             
             while((fgets(line, sizeof(line), file_read)) != NULL){
                 if(contains(line, "@") && contains(line, ":")){
@@ -349,6 +353,75 @@ int main(int argc, char** argv) {
                    }
 
                     
+                }
+
+                if(is_func){
+                    if(contains(line, ")") && index_symbol == 0){
+                        is_func = false;
+                        cout << "FUNC END " << index_symbol << " => " << line << endl;
+                    }else{
+                        if(contains(line, ")")){
+                            cout << "CONDITION " << index_symbol << " END:" << line << endl;
+                            index_symbol -= 1;
+                        }
+                    }
+
+                    if(contains(line, "(")){
+                          index_symbol += 1;
+                          cout << "CONDITION " << index_symbol << ": " << line << endl;
+                    }
+
+                }
+
+                if(contains(line, "func")){
+                    
+                    is_func = true;
+                    string nameFunc = toString(line);
+
+                    int index_end = (contains(line, "@")) ? nameFunc.find("@") : nameFunc.find("(");
+                    int index_start = nameFunc.find("func")+5;
+
+                    index_end = index_end - (index_start + 1);
+                    nameFunc = nameFunc.substr(index_start, index_end);
+                    nameFunc = toString(EraseSpace((char *) nameFunc.c_str())); 
+
+                    // nameFunc contém o nome da função
+                    // Insere label da função no array de funções Assembly
+                    stringstream labels;
+                    labels << nameFunc << ":";
+                    assembly["text_funcs"][text_funcs++] = labels.str().c_str();
+
+                    // Filtra e Armazena parâmetros da função 'nameFunc'
+                    if(contains(line, "@")){
+                        int arroba_ind = toString(line).find("@");
+                        int locals_ind = 0;
+                        int ebp_add = 4;
+                        stringstream local_name;
+                        stringstream ebp_value;
+                        for(int i = arroba_ind; i < toString(line).length(); i++){
+
+                            if(line[i] == '@') ++i;
+
+                            if(line[i] != ',' && line[i] != ' ' && line[i] != '(')
+                                local_name << line[i];
+
+                            if(line[i] == ',' || line[i] == '('){
+                                ebp_add += 4;
+                                ebp_value << "DWORD[ebp + " << ebp_add << "]";
+                                assembly["local_funcs"][nameFunc][local_name.str()] = ebp_value.str();
+                                local_name.str("");
+                                ebp_value.str("");
+                                
+                                if(line[i] == '(')
+                                    break;
+                            }
+                            
+                        }
+                    }
+
+                    cout << endl << assembly["local_funcs"] << endl;
+                    cout << "FUNC BEGIN " << index_symbol << " => " << line << endl;
+
                 }
             }
 

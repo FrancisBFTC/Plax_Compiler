@@ -51,7 +51,12 @@ string getString(char *line)
 
 	string lineStr = toString(line);
 
-    lineStr = lineStr.substr(lineStr.find(":")+1, lineStr.find("\n"));
+    int index_end = lineStr.find("(");
+    int index_start = lineStr.find(":")+1;
+
+    index_end = index_end - (index_start + 1);
+
+    lineStr = lineStr.substr(index_start, index_end);
 	lineStr[lineStr.length()-1] = 0;
 
     if(contains(line, "'")){
@@ -84,7 +89,13 @@ string getString(char *line)
 string getVariable(char *line)
 {
     string lineStr = toString(line);
-    string variable = lineStr.substr(lineStr.find("@")+1, lineStr.find(":")-1);
+
+    int index_end = lineStr.find(":");
+    int index_start = lineStr.find("@")+1;
+
+    index_end = index_end - (index_start + 1);
+
+    string variable = lineStr.substr(index_start, index_end);
 	
     return toString(EraseSpace((char *) variable.c_str()));
 }
@@ -165,9 +176,10 @@ int main(int argc, char** argv) {
 
             int index_symbol = 0;
             bool is_func = false;
+            string func_name;
             
             while((fgets(line, sizeof(line), file_read)) != NULL){
-                if(contains(line, "@") && contains(line, ":")){
+                if(contains(line, "@") && contains(line, ":") && !contains(line, "local")){
                     string str = getString(line);
                     string var = getVariable(line);
 
@@ -271,79 +283,124 @@ int main(int argc, char** argv) {
                             string type = assembly["type_vars"][var];
                             cout << type << ": " << str << ", VAR: @" << var << endl;
                             stringstream var_conc;
-                            var_conc << var << " dd " << str;
+                            var_conc << "\t" << var << " dd " << str;
                             assembly["data"][i] = var_conc.str();
                         }else{
                             string type = assembly["type_vars"][var];
                             cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
                             stringstream var_conc;
-                            var_conc << var << " db '" << str << "',0";
+                            var_conc << "\t" << var << " db '" << str << "'";
 
                             assembly["data"][i] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << var << ".size equ $ - " << var;
+                            var_conc << "\t" << var << ".size equ $ - " << var;
                             assembly["data"][++i] = var_conc.str();
                         }
 
                         i++;
                    }else{
-
                         stringstream var_conc;
                     
                         if(!exist_var){
                             if(isNumber(str)){
-                                var_conc << var << " dd " << str;
+                                var_conc << "\t" << var << " dd " << str;
                                 assembly["data"][i] = var_conc.str();
                                 i++;
                             }else{
-                                var_conc << "_" << var << "_" << " resd 1 ";
+                                var_conc << "\t" << var << " db '" << str << "'";
+                                assembly["data"][i] = var_conc.str();
+
+                                var_conc.str("");
+
+                                var_conc << "\t_" << var << "_" << " resd 1 ";
                                 assembly["bss"][bss++] = var_conc.str();
                                 assembly["realloc"][var] = false;
                             }
                         }else{
                             
                             if(isNumber(str)){
-                                var_conc << "mov DWORD[" << var << "], " << str;
+                                var_conc << "\tmov DWORD[" << var << "], " << str;
                                 assembly["text"][text_index++] = var_conc.str();
                             }else{
                                 var_conc << "_" << var << "_";
 
                                 stringstream push_inst;
-                                if(!assembly["realloc"][var]){
-                                    push_inst << "push " << str.length();
-                                    assembly["text"][text_index++] = push_inst.str();
-                                    assembly["text"][text_index++] = "call malloc";
+                                if(!is_func){
+                                    if(!assembly["realloc"][var]){
+                                        push_inst << "\tpush " << var << "__" << i << ".size";
+                                        assembly["text"][text_index++] = push_inst.str();
+                                        assembly["text"][text_index++] = "\tcall malloc";
+                                        assembly["text"][text_index++] = "\tadd esp, 4";
+                                    }else{
+                                        push_inst << "\tpush " << var << "__" << i << ".size";
+                                        assembly["text"][text_index++] = push_inst.str();
+                                        push_inst.str("");
+                                        push_inst << "\tpush DWORD[_" << var << "_]";
+                                        assembly["text"][text_index++] = push_inst.str();
+                                        assembly["text"][text_index++] = "\tcall realloc";
+                                        assembly["text"][text_index++] = "\tadd esp, 8";
+                                    }
+
+                                    stringstream addr_inst;
+                                    addr_inst << "\tmov [" << var_conc.str() << "], eax";
+                                    var_conc.str("");
+                                    var_conc << "\t" << var << "__" << i << " db '" << str << "'";
+
+                                    assembly["data"][i] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
+                                    assembly["data"][++i] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\tmov esi, " << var << "__" << i-1; 
+                                    assembly["text"][text_index++] = addr_inst.str();
+                                    assembly["text"][text_index++] = "\tmov edi, eax";
+                                    assembly["text"][text_index++] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
+                                    assembly["text"][text_index++] = var_conc.str();
+                                    assembly["text"][text_index++] = "\trep movsb";
                                 }else{
-                                    push_inst << "push " << str.length();
-                                    assembly["text"][text_index++] = push_inst.str();
-                                    push_inst.str("");
-                                    push_inst << "push DWORD[_" << var << "_]";
-                                    assembly["text"][text_index++] = push_inst.str();
-                                    assembly["text"][text_index++] = "call realloc";
+                                    if(!assembly["realloc"][var]){
+                                        push_inst << "\tpush " << var << "__" << i << ".size";
+                                        assembly["text_funcs"][text_funcs++] = push_inst.str();
+                                        assembly["text_funcs"][text_funcs++] = "\tcall malloc";
+                                        assembly["text_funcs"][text_funcs++] = "\tadd esp, 4";
+                                    }else{
+                                        push_inst << "\tpush " << var << "__" << i << ".size";
+                                        assembly["text_funcs"][text_funcs++] = push_inst.str();
+                                        push_inst.str("");
+                                        push_inst << "\tpush DWORD[_" << var << "_]";
+                                        assembly["text_funcs"][text_funcs++] = push_inst.str();
+                                        assembly["text_funcs"][text_funcs++] = "\tcall realloc";
+                                        assembly["text_funcs"][text_funcs++] = "\tadd esp, 8";
+                                    }
+
+                                    stringstream addr_inst;
+                                    addr_inst << "\tmov [" << var_conc.str() << "], eax";
+                                    var_conc.str("");
+                                    var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
+
+                                    assembly["data"][i] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
+                                    assembly["data"][++i] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\tmov esi, " << var << "__" << i-1; 
+                                    assembly["text_funcs"][text_funcs++] = addr_inst.str();
+                                    assembly["text_funcs"][text_funcs++] = "\tmov edi, eax";
+                                    assembly["text_funcs"][text_funcs++] = var_conc.str();
+                                    var_conc.str("");
+
+                                    var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
+                                    assembly["text_funcs"][text_funcs++] = var_conc.str();
+                                    assembly["text_funcs"][text_funcs++] = "\trep movsb";
                                 }
-
-                                stringstream addr_inst;
-                                addr_inst << "mov [" << var_conc.str() << "], eax";
-                                var_conc.str("");
-                                var_conc << var << "__" << i << " db '" << str << "',0";
-
-                                assembly["data"][i] = var_conc.str();
-                                var_conc.str("");
-
-                                var_conc << var << "__" << i << ".size equ $ - " << var << "__" << i;
-                                assembly["data"][++i] = var_conc.str();
-                                var_conc.str("");
-
-                                var_conc << "mov esi, [" << var << "__" << i-1 << "]"; 
-                                assembly["text"][text_index++] = addr_inst.str();
-                                assembly["text"][text_index++] = "mov edi, eax";
-                                assembly["text"][text_index++] = var_conc.str();
-                                var_conc.str("");
-
-                                var_conc << "mov ecx, " << str.length();
-                                assembly["text"][text_index++] = var_conc.str();
-                                assembly["text"][text_index++] = "rep movsb";
 
                                 i++;
                             
@@ -359,6 +416,7 @@ int main(int argc, char** argv) {
                     if(contains(line, ")") && index_symbol == 0){
                         is_func = false;
                         cout << "FUNC END " << index_symbol << " => " << line << endl;
+                        assembly["text_funcs"][text_funcs++] = "\tret";
                     }else{
                         if(contains(line, ")")){
                             cout << "CONDITION " << index_symbol << " END:" << line << endl;
@@ -385,6 +443,7 @@ int main(int argc, char** argv) {
                     nameFunc = nameFunc.substr(index_start, index_end);
                     nameFunc = toString(EraseSpace((char *) nameFunc.c_str())); 
 
+                    func_name = nameFunc;
                     // nameFunc contém o nome da função
                     // Insere label da função no array de funções Assembly
                     stringstream labels;
@@ -427,8 +486,8 @@ int main(int argc, char** argv) {
 
             
 
-            assembly["text"][text_index++] = "push 0";
-            assembly["text"][text_index++] = "call ExitProcess";
+            assembly["text"][text_index++] = "\tpush 0";
+            assembly["text"][text_index++] = "\tcall ExitProcess";
 
             fstream output;
             stringstream file;
@@ -460,6 +519,15 @@ int main(int argc, char** argv) {
 
             output << endl;
 
+            for(int i = 0; i < assembly["bss"].size(); i++){
+                if(i == 0)
+                    output << "section .bss" << endl << endl;
+                
+                code = assembly["bss"][i];
+                output << code << endl;
+            }
+
+            output << endl;
 
             for(int i = 0; i < assembly["text"].size(); i++){
                 if(i == 0)
@@ -471,11 +539,9 @@ int main(int argc, char** argv) {
 
             output << endl;
 
-            for(int i = 0; i < assembly["bss"].size(); i++){
-                if(i == 0)
-                    output << "section .bss" << endl << endl;
-                
-                code = assembly["bss"][i];
+
+            for(int i = 0; i < assembly["text_funcs"].size(); i++){
+                code = assembly["text_funcs"][i];
                 output << code << endl;
             }
 
@@ -493,7 +559,7 @@ int main(int argc, char** argv) {
             string golink_cmd = golink.str();
             system(golink_cmd.c_str());
 
-            system("del *.asm");
+            //system("del *.asm");
             system("del *.obj");
 
             system(argv[2]);

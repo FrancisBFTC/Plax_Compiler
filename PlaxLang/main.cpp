@@ -1,153 +1,6 @@
 // Inclusões de Bibliotecas de C e C++
-#include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sstream>
-#include <string.h>
-#include <vector>
-#include <windows.h>
-#include <fstream>
-#include <dirent.h>
-#include <cstdlib>
-#include <TIME.H>
+#include "plax_utils.h"
 
-#include <nlohmann/json.hpp>
-
-
-using namespace std;
-using json = nlohmann::json;
-
-json assembly;
-
-string toString(char *str)
-{
-	stringstream data1;
-	data1 << str;
-	return data1.str();
-}
-
-bool contains(char* first, string second)
-{
-	return (toString(first).find(second) == -1) ? false : true;         
-}
-
-char * EraseSpace( char * in )
-{
-    char * p = in;
-	char * out;
-    int i = 0;
-    while( *p ){
-        if( !isspace(*p) && strcmp(p, "	") != 0)
-            in[i++] = *p;
-
-        p++;
-    }
-    in[i] = 0;
-    return in;
-}
-
-string getString(char *line)
-{
-
-	string lineStr = toString(line);
-
-    int index_end = lineStr.find("(");
-    int index_start = lineStr.find(":")+1;
-
-    index_end = index_end - (index_start + 1);
-
-    lineStr = lineStr.substr(index_start, index_end);
-	lineStr[lineStr.length()-1] = 0;
-
-    if(contains(line, "'")){
-        size_t pos = 0;
-        int pos1 = 0;
-        int pos2 = 0;
-        int i = 0;
-        while (pos += 1){
-            pos = lineStr.find("'", pos);
-            if(pos != -1){
-                switch(i){
-                    case 0: pos1 = pos; break;
-                    case 1: pos2 = pos; break;
-                }
-            }
-
-            if (pos == std::string::npos) 
-                break;
-
-            i++;
-                    
-        }
-                    
-        return lineStr.substr(pos1+1, pos2-pos1-1);
-    }else{
-        return toString(EraseSpace((char *) lineStr.c_str()));   
-    }
-}
-
-string getVariable(char *line)
-{
-    string lineStr = toString(line);
-
-    int index_end = lineStr.find(":");
-    int index_start = lineStr.find("@")+1;
-
-    index_end = index_end - (index_start + 1);
-
-    string variable = lineStr.substr(index_start, index_end);
-	
-    return toString(EraseSpace((char *) variable.c_str()));
-}
-
-bool isNumber(string str)
-{
-    for (int i = 0; i < str.length(); i++) {
-        char c = str[i];
-        if (std::isdigit(c) == 0 && c != '-') return false;
-        if (c == '-' && str.length() == 1) return false;
-    }
-    return true;
-}
-
-int processOperationConst(string operation, int counter, int j){
-    int result = 0;
-    for(j = 0; j < assembly["operations"][counter].size(); j++){
-       string element = assembly["operations"][counter][j];
-
-        if(element == operation){
-            string number1 = assembly["operations"][counter][j - 1];
-            string number2 = assembly["operations"][counter][j + 1];
-            
-            if(operation == "*")
-                result = stoi(number1) * stoi(number2);
-            if(operation == "/")
-                result = stoi(number1) / stoi(number2);
-            if(operation == "+")
-                result = stoi(number1) + stoi(number2);
-            if(operation == "-")
-                result = stoi(number1) - stoi(number2);
-
-            counter = counter + 1;
-            string elem1;
-            int y = 0;
-
-            for(int x = 0; x < assembly["operations"][counter-1].size(); x++){
-                elem1 = assembly["operations"][counter-1][x];
-                if(x == (j - 1)){
-                    assembly["operations"][counter][y] = to_string(result).c_str();
-                    x = x + 2;
-                }else{
-                    assembly["operations"][counter][y] = elem1.c_str();
-                }
-                                                    
-                y++;
-            }
-            j = 0;
-        }
-    }
-    return counter;
-}
 
 int main(int argc, char** argv) {
 
@@ -164,6 +17,7 @@ int main(int argc, char** argv) {
             int ext_index = 0;
             int text_index = 0;
             int text_funcs = 0;
+            int rodata_index = 0;
 
             assembly["global"][0] = "main";
             assembly["extern"][ext_index++] = "ExitProcess";
@@ -176,139 +30,92 @@ int main(int argc, char** argv) {
 
             int index_symbol = 0;
             bool is_func = false;
-            string func_name;
             
             while((fgets(line, sizeof(line), file_read)) != NULL){
                 if(contains(line, "@") && contains(line, ":") && !contains(line, "local")){
-                    string str = getString(line);
-                    string var = getVariable(line);
-
-                    bool is_const = false;
-
-                    if(contains(line, "const['") && contains(line, "']")){
-                        assembly["type_vars"][var] = "CONST STRING";
-                        is_const = true;
-                    }else{
-                        if(contains(line, "const[") && contains(line, "]")){
-                            assembly["type_vars"][var] = "CONST NUMBER";
-                            str = str.substr(str.find("[")+1, str.find("]")-str.find("[")-1);
-                            is_const = true;
-                        }else{
-                            if(contains(line, "'")){
-                                assembly["type_vars"][var] = "STRING";
-                            }else{
-                                assembly["type_vars"][var] = "NUMBER";
-                            }
-                        }
-                    }
                     
-                    bool exist_var = false;
+                    str = getString(line);
+                    var = getVariable(line);
+                    StoreTypeVars(line);
+                    
+                    bool exist_var = (!assembly["vars"][var].is_null()) ? true : false;
+                    if(!is_func)
+                        assembly["vars"][var] = str.c_str();
 
-                    if(!assembly["vars"][var].is_null())
-                        exist_var = true;
+                    parsingVariables(line);
 
-                    assembly["vars"][var] = str.c_str();
-
-                    stringstream var_name;
-                    bool variable = false;
-                    char op;
-                    int count_op = 0;
-                    for(int i = 0; i < str.length(); i++){
-                        variable = false;
-
-                        if(str[i] == '@'){
-                            variable = true;
-                            ++i;
-                        }
-                        
-                        if(variable){
-
-                            while(i < str.length() && str[i] != '+' && str[i] != '-' && str[i] != '*' && str[i] != '/')
-                            {
-                                var_name << str[i];
-                                i++;
-                            }
-
-                            op = str[i];
-
-                            string type = assembly["type_vars"][var_name.str()];
-                            string value = assembly["vars"][var_name.str()];
-
-                            if(i == str.length()){
-
-                                if(type == "CONST STRING" || type == "CONST NUMBER")
-                                    is_const = true;
-
-                                assembly["type_vars"][var] = type.c_str();
-                                assembly["vars"][var] = value.c_str();
-                                str = assembly["vars"][var];
-
-                                if(assembly["operations"][0].size() > 1){
-                                    int result = 0;
-                                    int counter = 0;
-                                    assembly["operations"][0][count_op++] = value.c_str();
-                                    int j;
-                                    
-                                    counter = processOperationConst("*", counter, j);
-                                    counter = processOperationConst("/", counter, j);
-                                    counter = processOperationConst("+", counter, j);
-                                    counter = processOperationConst("-", counter, j);
-
-                                    string value_result = assembly["operations"][counter][0];
-                                    assembly["vars"][var] = value_result.c_str();
-                                    str = assembly["vars"][var];
-
-                                    count_op = 0;
-                                }
-                            
-                            }else{
-                                stringstream oper;
-                                oper << op;
-                                assembly["operations"][0][count_op++] = value.c_str();
-                                assembly["operations"][0][count_op++] = oper.str().c_str();
-                                var_name.clear();
-                                var_name.str("");
-                            }
-
-                            variable = false;
-                        }else{
-                            //cout << "'" << var_name.str() << "' nao e uma variavel" << endl;
-                        }
-                    }
-
-                    assembly["operations"].clear();
-
-                   if(is_const){
+                    if(is_constant){
                         if(isNumber(str)){
                             string type = assembly["type_vars"][var];
                             cout << type << ": " << str << ", VAR: @" << var << endl;
                             stringstream var_conc;
-                            var_conc << "\t" << var << " dd " << str;
-                            assembly["data"][i] = var_conc.str();
+                            if(!is_func){
+                                var_conc << "\t" << var << " dd " << str;
+                                assembly["rodata"][rodata_index++] = var_conc.str();
+                            }else{
+                                if(!assembly["local_funcs"][func_name][var].is_null()){
+                                    string param = assembly["local_funcs"][func_name][var];
+                                    var_conc << "\tmov " << param << ", " << str;
+                                }else{
+                                    if(assembly["vars"][var].is_null()){
+                                        local_offsets += 4;
+                                        var_conc << "\tmov DWORD[ebp - " << local_offsets << "], " << str;
+                                    }else{
+                                        var_conc << "\tmov DWORD[" << var << "], " << str;
+                                    }
+                                }
+                                assembly["text_funcs"][text_funcs++] = var_conc.str();
+                            }
                         }else{
                             string type = assembly["type_vars"][var];
                             cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
                             stringstream var_conc;
-                            var_conc << "\t" << var << " db '" << str << "'";
+                            
+                            bool is_plax_bool = false;
 
-                            assembly["data"][i] = var_conc.str();
+                            if(type == "CONST BOOL"){
+                                is_plax_bool = true;
+                                if(str == "true")
+                                    var_conc << "\t" << var << " db 1";
+                                else
+                                    var_conc << "\t" << var << " db 0";
+                            }else
+                                var_conc << "\t" << var << " db '" << str << "'";
+
+                            assembly["rodata"][rodata_index++] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << "\t" << var << ".size equ $ - " << var;
-                            assembly["data"][++i] = var_conc.str();
+                            if(!is_plax_bool){
+                                var_conc << "\t" << var << ".size equ $ - " << var;
+                                assembly["rodata"][rodata_index++] = var_conc.str();
+                            }
                         }
 
-                        i++;
-                   }else{
+                    }else{
                         stringstream var_conc;
                     
                         if(!exist_var){
                             if(isNumber(str)){
-                                var_conc << "\t" << var << " dd " << str;
-                                assembly["data"][i] = var_conc.str();
-                                i++;
+                                if(!is_func){
+                                    var_conc << "\t" << var << " dd " << str;
+                                    assembly["data"][i++] = var_conc.str();
+                                }else{
+                                    if(!assembly["local_funcs"][func_name][var].is_null()){
+                                        string param = assembly["local_funcs"][func_name][var];
+                                        var_conc << "\tmov " << param << ", " << str;
+                                    }else{
+                                        local_offsets += 4;
+                                        var_conc << "\tmov DWORD[ebp - " << local_offsets << "], " << str;
+                                    }
+                                    assembly["text_funcs"][text_funcs++] = var_conc.str();
+                                }
+
                             }else{
-                                var_conc << "\t" << var << " db '" << str << "'";
+                                if(str == "NULL")
+                                    var_conc << "\t" << var << " db 0";
+                                else
+                                    var_conc << "\t" << var << " db '" << str << "'";
+
                                 assembly["data"][i] = var_conc.str();
 
                                 var_conc.str("");
@@ -320,8 +127,25 @@ int main(int argc, char** argv) {
                         }else{
                             
                             if(isNumber(str)){
-                                var_conc << "\tmov DWORD[" << var << "], " << str;
-                                assembly["text"][text_index++] = var_conc.str();
+                                if(!is_func){
+                                    var_conc << "\tmov DWORD[" << var << "], " << str;
+                                    assembly["text"][text_index++] = var_conc.str();
+                                }else{
+                                    string globalword = toString(line);
+                                    int firstpos = globalword.find("global");
+                                    int seconpos = globalword.find("@");
+                                    if(contains(line, "global") && (firstpos < seconpos)){
+                                         var_conc << "\tmov DWORD[" << var << "], " << str;
+                                    }else{
+                                        if(!assembly["local_funcs"][func_name][var].is_null()){
+                                            string param = assembly["local_funcs"][func_name][var];
+                                            var_conc << "\tmov " << param << ", " << str;
+                                        }else{
+                                            var_conc << "\tmov DWORD[" << var << "], " << str;
+                                        }
+                                    }
+                                    assembly["text_funcs"][text_funcs++] = var_conc.str();
+                                }
                             }else{
                                 var_conc << "_" << var << "_";
 
@@ -407,7 +231,7 @@ int main(int argc, char** argv) {
                                 assembly["realloc"][var] = true;
                             }
                         }
-                   }
+                    }
 
                     
                 }
@@ -433,6 +257,7 @@ int main(int argc, char** argv) {
 
                 if(contains(line, "func")){
                     
+                    local_offsets = 0;
                     is_func = true;
                     string nameFunc = toString(line);
 
@@ -524,6 +349,16 @@ int main(int argc, char** argv) {
                     output << "section .bss" << endl << endl;
                 
                 code = assembly["bss"][i];
+                output << code << endl;
+            }
+
+            output << endl;
+
+            for(int i = 0; i < assembly["rodata"].size(); i++){
+                if(i == 0)
+                    output << "section .rodata" << endl << endl;
+                
+                code = assembly["rodata"][i];
                 output << code << endl;
             }
 

@@ -20,7 +20,7 @@
 @cidade : NULL
 
 func StoreNome (
-    @nome : 'Wenderson'
+    @nome : 'KiddieOS.Community'
 )
 
 func StoreIdade (

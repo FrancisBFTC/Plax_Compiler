@@ -13,7 +13,7 @@ section .data
 	reg__0.size equ $ - reg__0
 	reg__2 db 'Alterando dado 1', 0
 	reg__2.size equ $ - reg__2
-	reg__4 db "The user '"
+	reg__4 db 13, 10, "The user '"
 	reg__4.size equ $ - reg__4
 	reg__6 db "' have "
 	reg__6.size equ $ - reg__6
@@ -30,7 +30,7 @@ section .bss
 section .text
 
 main:
-	push    -11
+	push    10
     call    GetStdHandle
 	mov 	ebx, eax
 

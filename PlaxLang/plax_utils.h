@@ -9,7 +9,18 @@ bool is_constant;
 string str;
 string var;
 string func_name;
+string type;
 int local_offsets = 0;
+
+int ext_index = 0;
+int text_index = 0;
+int text_funcs = 0;
+int rodata_index = 0;
+int dll_count = 0;
+
+int bss = 0;
+int index_symbol = 0;
+bool is_func = false;
 
 // Declarações de Protótipos
 string getString(char*);
@@ -17,19 +28,20 @@ string getVariable(char*);
 int processOperationConst(string, int, int);
 void StoreTypeVars(char*);
 void parsingVariables(char*);
+bool importCommand(string);
 
 string getString(char *line)
 {
 
 	string lineStr = toString(line);
 
-    int index_end = lineStr.find("(");
+    int index_end = lineStr.length();
     int index_start = lineStr.find(":")+1;
 
     index_end = index_end - (index_start + 1);
 
     lineStr = lineStr.substr(index_start, index_end);
-	lineStr[lineStr.length()-1] = 0;
+	lineStr[lineStr.length()] = 0;
 
     if(contains(line, "'")){
         size_t pos = 0;
@@ -54,7 +66,10 @@ string getString(char *line)
                     
         return lineStr.substr(pos1+1, pos2-pos1-1);
     }else{
-        return toString(EraseSpace((char *) lineStr.c_str()));   
+        if(lineStr.find("import") == -1)
+            return toString(EraseSpace((char *) lineStr.c_str())); 
+        else
+            return lineStr;  
     }
 }
 
@@ -115,25 +130,30 @@ void StoreTypeVars(char *line)
 {
     is_constant = false;
     
-    if(contains(line, "const['") && contains(line, "']")){
-        assembly["type_vars"][var] = "CONST STRING";
-        is_constant = true;
-    }else{
-        if(contains(line, "const[") && contains(line, "]")){
-            assembly["type_vars"][var] = (contains(line, ".")) ? "CONST FLOAT" : "CONST INT";
-            str = str.substr(str.find("[")+1, str.find("]")-str.find("[")-1); 
-
-            if(str == "true" || str == "false")
-                  assembly["type_vars"][var] = "CONST BOOL";
-
+    if(toString(line).find("import") == -1){
+        if(contains(line, "const['") && contains(line, "']")){
+            assembly["type_vars"][var] = "CONST STRING";
             is_constant = true;
         }else{
-            if(contains(line, "'")){
-                assembly["type_vars"][var] = "STRING";
+            if(contains(line, "const[") && contains(line, "]")){
+                assembly["type_vars"][var] = (contains(line, ".")) ? "CONST FLOAT" : "CONST INT";
+                str = str.substr(str.find("[")+1, str.find("]")-str.find("[")-1); 
+
+                if(str == "true" || str == "false")
+                    assembly["type_vars"][var] = "CONST BOOL";
+
+                is_constant = true;
             }else{
-                assembly["type_vars"][var] = "INT";
+                if(contains(line, "'")){
+                    assembly["type_vars"][var] = "STRING";
+                }else{
+                    assembly["type_vars"][var] = "INT";
+                }
+                //cout << "TYPE:" << assembly["type_vars"][var] << ", VAR: " << var << endl;
             }
         }
+    }else{
+        assembly["type_vars"][var] = "RETURN";
     }
 }
 
@@ -145,7 +165,7 @@ void parsingVariables(char *line){
     bool const_finded = true;
     bool has_variable = false;
 
-    if(!contains(line, "const[") && !isNumber(str)){
+    if(!contains(line, "const[") && !isNumber(str) && str.find("import") == -1){
         for(int i = 0; i < str.length(); i++){
             variable = false;
 
@@ -194,12 +214,19 @@ void parsingVariables(char *line){
                             if(isNumber(value) && value.find(".") != -1)
                                 assembly["type_vars"][var] = "CONST FLOAT";
                             else
-                                assembly["type_vars"][var] = "CONST INT";
+                                if(isNumber(value))
+                                    assembly["type_vars"][var] = "CONST INT";
+                                else
+                                    assembly["type_vars"][var] = "CONST STRING";
                         }else{
                             if(isNumber(value) && value.find(".") != -1)
                                 assembly["type_vars"][var] = "FLOAT";
                             else
-                                assembly["type_vars"][var] = "INT";
+                                if(isNumber(value))
+                                    assembly["type_vars"][var] = "INT";
+                                else
+                                    assembly["type_vars"][var] = "STRING";
+
                         }
                     }
 
@@ -240,6 +267,304 @@ void parsingVariables(char *line){
     }  
 
     assembly["operations"].clear(); 
+}
+
+bool importCommand(string lineImport){
+                
+                    int pushes = 0;
+                    int i = 0;
+                    bool ok = false;
+                    while(lineImport[i] == ' ' || lineImport[i] == 0x09) i++;
+
+                    stringstream importStr;
+                    int quant_params = 0;
+                    for(; i < lineImport.length(); i++){
+                        if(!ok){
+                            ok = true;
+                            if(lineImport[i] != 'i')
+                                break;
+                        }
+
+
+                        importStr << lineImport[i];
+                        if(importStr.str() == "import"){
+                            
+                            if(lineImport[i+1] != ' '){
+                                cout << "Erro: Adicione um espaco apos o comando import" << endl;
+                                return false;
+                            }else{
+                                ++i;
+                                while(lineImport[i] == ' ' || lineImport[i] == 0x09) i++;
+
+                                stringstream dllName;
+                                while(lineImport[i] != '.'){
+                                    dllName << lineImport[i];
+
+                                    if(lineImport[i++] == ' '){
+                                        cout << "Erro: Adicione um nome de DLL seguido de ponto" << endl;
+                                        return false;
+                                    }
+                                }
+                                ++i;
+
+
+                                stringstream verify;
+                                verify << lineImport[i];
+                                if(lineImport[i] == ' ' || lineImport[i] == 0x09 || isNumber(verify.str())){
+                                    cout << "Erro: A forma escrita apos o ponto nao e permitida" << endl;
+                                    return false;
+                                }
+
+                                dllName << ".dll";
+
+                                string dll_file = dllName.str();
+                                bool already_exist = false;
+
+                                for(int j = 0; j < assembly["dlls"].size(); j++){
+                                    string current_dll = assembly["dlls"][j];
+                                    if(current_dll == dll_file){
+                                        already_exist = true;
+                                        break;
+                                    }
+                                }
+                                if(!already_exist)
+                                    assembly["dlls"][dll_count++] = dll_file;
+                                
+                                 
+
+                                stringstream dllfunc;
+
+                                while(lineImport[i] != ' ' && lineImport[i] != '\n'){
+                                    dllfunc << lineImport[i];
+
+                                    if(lineImport[i] == '@'){
+                                        cout << "Erro: A funcao nao foi escrita de forma correta" << endl;
+                                        return false;
+                                    }
+                                    i++;
+                                }
+
+                                already_exist = false;
+
+                                for(int j = 0; j < assembly["extern"].size(); j++){
+                                    string current_ext = assembly["extern"][j];
+                                    if(current_ext == dllfunc.str()){
+                                        already_exist = true;
+                                        break;
+                                    }
+                                }
+                                if(!already_exist)
+                                    assembly["extern"][ext_index++] = dllfunc.str();
+
+                                while(lineImport[i] == ' ' || lineImport[i] == 0x09) i++;
+
+                                stringstream call_func;
+                                if(lineImport[i] == '\n'){
+                                    quant_params = 0;
+                                    call_func << "\tcall " << dllfunc.str();
+                                    if(!is_func){
+                                        assembly["text"][text_index++] = call_func.str();
+                                    }else{
+                                        assembly["text_funcs"][text_funcs++] = call_func.str();
+                                    }
+                                   break;
+                                }
+
+                                int j = i;
+                                for(; lineImport[i] != '\n'; i++)
+                                    if(lineImport[i] == ',')
+                                        quant_params++;
+
+                                ++quant_params;
+                                i = j;
+
+                               
+                                /*
+                                for(j = 0; j < quant_params; j++){
+                                    if(!is_func)
+                                        assembly["text"][text_index++] = " ";
+                                    else
+                                        assembly["text_funcs"][text_funcs++] = " ";
+                                }
+                                */
+
+                                stringstream param;
+                                bool is_var = false;
+                                for(; lineImport[i] != '\n'; i++){
+                                     
+                                    if(lineImport[i] == '@')
+                                    {
+                                        is_var = true;
+                                        ++i;
+                                    }
+                                        
+
+                                    if(lineImport[i] != ',' && lineImport[i] != ' ' && lineImport[i] != '\n')
+                                    {
+                                        param << lineImport[i];
+                                    }else{
+                                        if(lineImport[i] != ' '){
+                                             
+                                            stringstream push_params;
+                                            string typevar;
+
+                                            if(!assembly["type_vars"][param.str()].is_null())
+                                                typevar = assembly["type_vars"][param.str()];
+
+                                            if(is_var){
+                                                
+                                                if(!is_func){                
+                                                    if(typevar == "CONST INT" || typevar == "CONST FLOAT" || typevar == "INT" || typevar == "FLOAT"){
+                                                        push_params << "\tpush DWORD[" << param.str() << "]";
+                                                    }else{
+                                                        if(typevar == "CONST STRING"){
+                                                            push_params << "\tpush " << param.str();
+                                                        }else{
+                                                            push_params << "\tpush DWORD[_" << param.str() << "_]";
+                                                        }
+                                                    }
+                                                    assembly["pushes_call"][pushes++] = push_params.str();
+                                                    //assembly["text"][text_index++] = push_params.str();
+                                                }else{
+                                                    if(!assembly["local_funcs"][func_name][param.str()].is_null()){
+                                                        string params = assembly["local_funcs"][func_name][param.str()];
+                                                        push_params << "\tpush " << params;
+                                                    }else{
+                                                        if(!assembly["local_names"][func_name][param.str()].is_null()){
+                                                            string stackname = assembly["local_names"][func_name][param.str()];
+                                                            push_params << "\tpush " << stackname;
+                                                        }else{
+                                                            if(!assembly["vars"][param.str()].is_null()){
+                                                                if(typevar == "CONST INT" || typevar == "CONST FLOAT" || typevar == "INT" || typevar == "FLOAT"){
+                                                                    push_params << "\tpush DWORD[" << param.str() << "]";
+                                                                }else{
+                                                                    if(typevar == "CONST STRING"){
+                                                                        push_params << "\tpush " << param.str();
+                                                                    }else{
+                                                                        push_params << "\tpush DWORD[_" << param.str() << "_]";
+                                                                    }
+                                                                }
+                                                            }else{
+                                                                cout << "Erro: A variavel " << param.str() << " nao existe!" << endl;
+                                                            }
+                                                        }
+                                                    }
+                                                    assembly["pushes_call"][pushes++] = push_params.str();
+                                                    //assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                }
+                                            }else{
+                                                if(!is_func){
+                                                    push_params << "\tpush " << param.str();
+                                                    //assembly["text"][text_index++] = push_params.str();
+                                                }else{
+                                                    push_params << "\tpush " << param.str();
+                                                    //assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                }
+                                                assembly["pushes_call"][pushes++] = push_params.str();
+                                            }
+                                            is_var = false;
+                                            
+                                            param.str("");
+                                        }
+                            
+                                    }
+
+                                    if(lineImport[i+1] == '\n'){
+                                        
+                                            stringstream push_params;
+                                            string typevar;
+                                            if(!assembly["type_vars"][param.str()].is_null())
+                                                typevar = assembly["type_vars"][param.str()];
+                                                
+                                            if(is_var){
+                                                if(!is_func){                
+                                                    if(typevar == "CONST INT" || typevar == "CONST FLOAT" || typevar == "INT" || typevar == "FLOAT"){
+                                                        push_params << "\tpush DWORD[" << param.str() << "]";
+                                                    }else{
+                                                        if(typevar == "CONST STRING"){
+                                                            push_params << "\tpush " << param.str();
+                                                        }else{
+                                                            push_params << "\tpush DWORD[_" << param.str() << "_]";
+                                                        }
+                                                    }
+                                                    assembly["pushes_call"][pushes++] = push_params.str();
+                                                    //assembly["text"][text_index++] = push_params.str();
+                                                }else{
+                                                    if(!assembly["local_funcs"][func_name][param.str()].is_null()){
+                                                        string params = assembly["local_funcs"][func_name][param.str()];
+                                                        push_params << "\tpush " << params;
+                                                    }else{
+                                                        if(!assembly["local_names"][func_name][param.str()].is_null()){
+                                                            string stackname = assembly["local_names"][func_name][param.str()];
+                                                            push_params << "\tpush " << stackname;
+                                                        }else{
+                                                            if(!assembly["vars"][param.str()].is_null()){
+                                                                if(typevar == "CONST INT" || typevar == "CONST FLOAT" || typevar == "INT" || typevar == "FLOAT"){
+                                                                    push_params << "\tpush DWORD[" << param.str() << "]";
+                                                                }else{
+                                                                    if(typevar == "CONST STRING"){
+                                                                        push_params << "\tpush " << param.str();
+                                                                    }else{
+                                                                        push_params << "\tpush DWORD[_" << param.str() << "_]";
+                                                                    }
+                                                                }
+                                                            }else{
+                                                                cout << "Erro: A variavel " << param.str() << " nao existe!" << endl;
+                                                            }
+                                                        }
+                                                    }
+                                                    assembly["pushes_call"][pushes++] = push_params.str();
+                                                    //assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                }
+                                            }else{
+                                                if(!is_func){
+                                                    push_params << "\tpush " << param.str();
+                                                    //assembly["text"][text_index++] = push_params.str();
+                                                }else{
+                                                    push_params << "\tpush " << param.str();
+                                                    //assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                }
+                                                assembly["pushes_call"][pushes++] = push_params.str();
+                                            }
+                                            is_var = false;
+
+                                            push_params.str("");
+                                            push_params << "\tcall " << dllfunc.str();
+
+                                            for(int x = assembly["pushes_call"].size()-1; x >= 0 ; x--){
+                                                string push_call = assembly["pushes_call"][x];
+                                                if(!is_func){
+                                                    assembly["text"][text_index++] = push_call;
+                                                    if(x == 0){
+                                                        assembly["text"][text_index++] = push_params.str();
+                                                        push_params.str("");
+                                                        push_params << "\tadd esp, " << assembly["pushes_call"].size() * 4;
+                                                        assembly["text"][text_index++] = push_params.str();
+                                                    }                                                
+                                                }else{
+                                                    assembly["text_funcs"][text_funcs++] = push_call;
+                                                    if(x == 0){
+                                                        assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                        push_params.str("");
+                                                        push_params << "\tadd esp, " << assembly["pushes_call"].size() * 4;
+                                                        assembly["text_funcs"][text_funcs++] = push_params.str();
+                                                    }
+                                                }
+                                            }
+
+                                            param.str("");
+                                            
+
+                                    }
+                                }
+
+                                break;
+                                
+                            }
+                        }
+                    }  
+
+                return true; 
 }
 
 #endif

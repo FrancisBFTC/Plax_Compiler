@@ -14,22 +14,18 @@ int main(int argc, char** argv) {
                 return 1;
             }
 
-            int ext_index = 0;
-            int text_index = 0;
-            int text_funcs = 0;
-            int rodata_index = 0;
-
             assembly["global"][0] = "main";
             assembly["extern"][ext_index++] = "ExitProcess";
             assembly["extern"][ext_index++] = "malloc";
             assembly["extern"][ext_index++] = "realloc";
             assembly["text"][text_index++] = "main:";
 
-            int i = 0;
-            int bss = 0;
+            assembly["dlls"][dll_count++] = "kernel32.dll";
+            assembly["dlls"][dll_count++] = "msvcrt.dll";
+            assembly["bss"][bss++] = "\t_return_funcs_ resd 1";
 
-            int index_symbol = 0;
-            bool is_func = false;
+            int i = 0;
+            
             
             while((fgets(line, sizeof(line), file_read)) != NULL){
                 if(contains(line, "@") && contains(line, ":") && !contains(line, "local")){
@@ -46,8 +42,9 @@ int main(int argc, char** argv) {
 
                     if(is_constant){
                         if(isNumber(str)){
-                            string type = assembly["type_vars"][var];
-                            cout << type << ": " << str << ", VAR: @" << var << endl;
+                            if(!assembly["type_vars"][var].is_null())
+                                type = assembly["type_vars"][var];
+                            //cout << type << ": " << str << ", VAR: @" << var << endl;
                             stringstream var_conc;
                             if(!is_func){
                                 var_conc << "\t" << var << " dd " << str;
@@ -59,7 +56,10 @@ int main(int argc, char** argv) {
                                 }else{
                                     if(assembly["vars"][var].is_null()){
                                         local_offsets += 4;
-                                        var_conc << "\tmov DWORD[ebp - " << local_offsets << "], " << str;
+                                        stringstream stacklocal;
+                                        stacklocal << "DWORD[ebp - " << local_offsets << "]";
+                                        var_conc << "\tmov " << stacklocal.str() << ", " << str;
+                                        assembly["local_names"][func_name][var] = stacklocal.str();
                                     }else{
                                         var_conc << "\tmov DWORD[" << var << "], " << str;
                                     }
@@ -67,8 +67,9 @@ int main(int argc, char** argv) {
                                 assembly["text_funcs"][text_funcs++] = var_conc.str();
                             }
                         }else{
-                            string type = assembly["type_vars"][var];
-                            cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
+                            if(!assembly["type_vars"][var].is_null())
+                                type = assembly["type_vars"][var];
+                            //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
                             stringstream var_conc;
                             
                             bool is_plax_bool = false;
@@ -96,6 +97,10 @@ int main(int argc, char** argv) {
                     
                         if(!exist_var){
                             if(isNumber(str)){
+                                if(!assembly["type_vars"][var].is_null())
+                                        type = assembly["type_vars"][var];
+                                    
+                                    //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
                                 if(!is_func){
                                     var_conc << "\t" << var << " dd " << str;
                                     assembly["data"][i++] = var_conc.str();
@@ -105,28 +110,61 @@ int main(int argc, char** argv) {
                                         var_conc << "\tmov " << param << ", " << str;
                                     }else{
                                         local_offsets += 4;
-                                        var_conc << "\tmov DWORD[ebp - " << local_offsets << "], " << str;
+                                        stringstream stacklocal;
+                                        stacklocal << "DWORD[ebp - " << local_offsets << "]";
+                                        var_conc << "\tmov " << stacklocal.str() << ", " << str;
+                                        assembly["local_names"][func_name][var] = stacklocal.str();
                                     }
                                     assembly["text_funcs"][text_funcs++] = var_conc.str();
                                 }
 
                             }else{
-                                if(str == "NULL")
-                                    var_conc << "\t" << var << " db 0";
-                                else
-                                    var_conc << "\t" << var << " db '" << str << "'";
+                                if(!assembly["type_vars"][var].is_null())
+                                        type = assembly["type_vars"][var];
+                                    
+                                    //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
 
-                                assembly["data"][i] = var_conc.str();
+                                if(str.find("import") != -1){
+                                    //cout << str << endl;
+                                    stringstream strbreak;
+                                    strbreak << str << "\n";
+                                    bool success = importCommand(strbreak.str());
+                                    if(!success)
+                                        return 0;
 
-                                var_conc.str("");
+                                    var_conc << "\t_" << var << "_" << " resd 1 ";
+                                    assembly["bss"][bss++] = var_conc.str();
+                                    var_conc.str("");
+                                    var_conc << "\tmov DWORD[_" << var << "_], eax";
 
-                                var_conc << "\t_" << var << "_" << " resd 1 ";
-                                assembly["bss"][bss++] = var_conc.str();
-                                assembly["realloc"][var] = false;
+                                    if(!is_func)
+                                        assembly["text"][text_index++] = var_conc.str();
+                                    else
+                                        assembly["text_funcs"][text_funcs++] = var_conc.str();
+
+                                    assembly["realloc"][var] = false;
+                                }else{
+                                    if(str == "NULL")
+                                        var_conc << "\t" << var << " db 0";
+                                    else
+                                        var_conc << "\t" << var << " db '" << str << "'";
+
+                                    assembly["data"][i] = var_conc.str();
+
+                                    var_conc.str("");
+
+                                    var_conc << "\t_" << var << "_" << " resd 1 ";
+                                    assembly["bss"][bss++] = var_conc.str();
+                                    assembly["realloc"][var] = false;
+                                }
                             }
                         }else{
                             
                             if(isNumber(str)){
+                                if(!assembly["type_vars"][var].is_null())
+                                        type = assembly["type_vars"][var];
+                                    
+                                    //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
                                 if(!is_func){
                                     var_conc << "\tmov DWORD[" << var << "], " << str;
                                     assembly["text"][text_index++] = var_conc.str();
@@ -147,6 +185,11 @@ int main(int argc, char** argv) {
                                     assembly["text_funcs"][text_funcs++] = var_conc.str();
                                 }
                             }else{
+                                if(!assembly["type_vars"][var].is_null())
+                                        type = assembly["type_vars"][var];
+                                    
+                                    //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
+
                                 var_conc << "_" << var << "_";
 
                                 stringstream push_inst;
@@ -239,18 +282,20 @@ int main(int argc, char** argv) {
                 if(is_func){
                     if(contains(line, ")") && index_symbol == 0){
                         is_func = false;
-                        cout << "FUNC END " << index_symbol << " => " << line << endl;
+                        //cout << "FUNC END " << index_symbol << " => " << line << endl;
+                        assembly["text_funcs"][text_funcs++] = "\tmov ebp, esp";
+                        assembly["text_funcs"][text_funcs++] = "\tpop ebp";
                         assembly["text_funcs"][text_funcs++] = "\tret";
                     }else{
                         if(contains(line, ")")){
-                            cout << "CONDITION " << index_symbol << " END:" << line << endl;
+                            //cout << "CONDITION " << index_symbol << " END:" << line << endl;
                             index_symbol -= 1;
                         }
                     }
 
                     if(contains(line, "(")){
                           index_symbol += 1;
-                          cout << "CONDITION " << index_symbol << ": " << line << endl;
+                          //cout << "CONDITION " << index_symbol << ": " << line << endl;
                     }
 
                 }
@@ -274,6 +319,8 @@ int main(int argc, char** argv) {
                     stringstream labels;
                     labels << nameFunc << ":";
                     assembly["text_funcs"][text_funcs++] = labels.str().c_str();
+                    assembly["text_funcs"][text_funcs++] = "\tpush ebp";
+                    assembly["text_funcs"][text_funcs++] = "\tmov ebp, esp";
 
                     // Filtra e Armazena parâmetros da função 'nameFunc'
                     if(contains(line, "@")){
@@ -303,10 +350,44 @@ int main(int argc, char** argv) {
                         }
                     }
 
-                    cout << endl << assembly["local_funcs"] << endl;
-                    cout << "FUNC BEGIN " << index_symbol << " => " << line << endl;
+                   // cout << "FUNC BEGIN " << index_symbol << " => " << line << endl;
 
                 }
+
+                if(contains(line, "import")){
+                    bool success = importCommand(toString(line));
+                    if(!success)
+                        return 0;
+                }
+
+                if(contains(line, "return")){
+                    string lineStr = toString(line);
+
+                    int index_end = lineStr.length();
+                    int index_start = lineStr.find("return")+6;
+
+                    index_end = index_end - (index_start + 1);
+
+                    lineStr = lineStr.substr(index_start, index_end);
+
+                    if(lineStr.find("import") != -1){
+                        stringstream strbreak;
+                        strbreak << lineStr << "\n";
+                        bool success = importCommand(strbreak.str());
+                        if(!success)
+                            return 0;
+
+                        strbreak.str("");
+                        strbreak << "\tmov DWORD[_return_funcs_], eax";
+
+                        if(!is_func)
+                            assembly["text"][text_index++] = strbreak.str();
+                        else
+                            assembly["text_funcs"][text_funcs++] = strbreak.str();
+                    }
+
+                }
+                
             }
 
             
@@ -390,11 +471,19 @@ int main(int argc, char** argv) {
 
             //GoLink /console /entry main test.obj kernel32.dll user32.dll
             stringstream golink;
-            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2] << " msvcrt.dll kernel32.dll user32.dll";
+            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2];
+
+            for(int i = 0; i < assembly["dlls"].size(); i++)
+            {
+                string dll_link = assembly["dlls"][i];
+                golink << " " << dll_link;
+            }
             string golink_cmd = golink.str();
             system(golink_cmd.c_str());
 
-            //system("del *.asm");
+            //cout << golink_cmd << endl;
+
+            system("del *.asm");
             system("del *.obj");
 
             system(argv[2]);

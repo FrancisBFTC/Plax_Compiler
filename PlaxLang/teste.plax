@@ -1,0 +1,16 @@
+use * of <io_sys>
+use * of <shell>
+use * of <file_sys>
+
+@valor : 10  <<< valor >>>
+
+<<< 
+	Print a string on Screen
+>>>
+Show['Exibe esta String na tela']
+
+<<< Redirect a text to file from Shell command >>>
+Command['echo Hello World > file.txt']
+
+<<< Create a file with a filesystem operation >>>
+Create['Arquivo.txt', 'Dados para o arquivo']

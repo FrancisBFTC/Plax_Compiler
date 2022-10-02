@@ -1,0 +1,45 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/syntax.html
+name: Plax
+file_extensions: [plax, px]
+scope: source.plax
+variables:
+  ident: '[A-Za-z_][A-Za-z_0-9]*'
+contexts:
+  main:
+    - match: \b(if|else|for|while|use|of|import|func)\b
+      scope: keyword.control.c
+    - match: '[?!:\[\]*+=/^()]'
+      scope: keyword.control.c
+    - match: "'"
+      push: string
+    - match: "<<<"
+      push: comment
+    - match: '@'
+      scope: punctuation.definition.tag.begin
+      push: variable
+    - include: comments
+    - match: \b[0-9]+\b
+      scope: constant.numeric.c
+    - match: '[a-zA-Z_0-9]+'
+      scope: punctuation.section.parens.end.c++
+
+  string:
+    - meta_scope: variable.parameter.c++
+    - match: \\.
+      scope: constant.character.escape.c
+    - match: "'"
+      pop: true
+
+  comment:
+    - meta_scope: string.quoted.double.c
+    - match: ">>>"
+      pop: true
+
+  variable:
+     - meta_scope: punctuation.section.parens.end.c++
+     - match: '[a-zA-Z_0-9@]+'
+       scope: punctuation.definition.tag.begin
+       pop: true
+

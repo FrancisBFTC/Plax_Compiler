@@ -1,0 +1,9 @@
+<<< 
+    Funções para comandos do Terminal e operações do Shell
+    Autor: Wender Francis
+    Linguagem: Plax
+>>>
+
+func Command @cmd (
+    import msvcrt.system @cmd
+)

@@ -1,10 +1,16 @@
-@STD_OUTPUT : -11
-@stdout : import kernel32.GetStdHandle @STD_OUTPUT
+use * of <io_sys>
+use * of <shell>
+use * of <file_sys>
 
-@text : NULL
-@text : 'Hello World'
-@length : 11
+@valor : 10  <<< valor >>>
 
-import kernel32.SetConsoleTextAttribute @stdout, 2
-import kernel32.WriteConsoleA @stdout, @text, @length, 0, 0
-import kernel32.SetConsoleTextAttribute @stdout, 15
+<<< 
+	Print a string on Screen
+>>>
+Show['Exibe esta String na tela']
+
+<<< Redirect a text to file from Shell command >>>
+Command['echo Hello World > file.txt']
+
+<<< Create a file with a filesystem operation >>>
+Create['Arquivo.txt', 'Dados para o arquivo']

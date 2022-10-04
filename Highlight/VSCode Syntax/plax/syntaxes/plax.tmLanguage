@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>fileTypes</key>
+	<array>
+		<string>plax</string>
+		<string>pl</string>
+	</array>
+	<key>name</key>
+	<string>Plax</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>match</key>
+			<string>\b(if|else|for|while|use|of|import|func|return)\b</string>
+			<key>name</key>
+			<string>keyword.control.c</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
+			<string>[?!:\[\]*+=/^()]</string>
+			<key>name</key>
+			<string>keyword.control.c</string>
+		</dict>
+
+		<dict>
+			<key>include</key>
+			<string>#string</string>
+		</dict>
+
+		<dict>
+			<key>include</key>
+			<string>#comments</string>
+		</dict>
+
+		<dict>
+			<key>begin</key>
+			<string>@</string>
+			<key>end</key>
+			<string>[a-zA-Z_0-9@]+</string>
+			<key>name</key>
+			<string>variable.parameter.c++</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>#variable</string>
+				</dict>
+			</array>
+		</dict>
+		
+		<dict>
+			<key>include</key>
+			<string>#comments</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
+			<string>\b[0-9]+\b</string>
+			<key>name</key>
+			<string>constant.numeric.c</string>
+		</dict>
+
+		<dict>
+			<key>match</key>
+			<string>[a-zA-Z_0-9]+</string>
+			<key>name</key>
+			<string>punctuation.section.parens.end.c++</string>
+		</dict>
+	</array>
+
+	<key>repository</key>
+	<dict>
+		
+		<key>escape</key>
+		<dict>
+			<key>match</key>
+			<string>\\.</string>
+			<key>name</key>
+			<string>constant.character.escape.c</string>
+		</dict>
+
+		<key>string</key>
+		<dict>
+			<key>begin</key>
+			<string>'</string>
+			<key>end</key>
+			<string>'</string>
+			<key>name</key>
+			<string>string.quoted.double.c</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>#escape</string>
+				</dict>
+			</array>
+		</dict>
+
+		<key>comments</key>
+		<dict>
+
+			<key>begin</key>
+			<string>&lt;&lt;&lt;</string>
+			<key>end</key>
+			<string>&gt;&gt;&gt;</string>
+			<key>name</key>
+			<string>comment.block</string>
+		</dict>
+
+		<key>variable</key>
+		<dict>
+			<key>match</key>
+			<string>@</string>
+			<key>name</key>
+			<string>variable.parameter.c++</string>
+		</dict>	
+
+	</dict>
+	<key>scopeName</key>
+	<string>source.plax</string>
+
+	<key>uuid</key>
+	<string>E1B78601-E584-4A7F-B011-A61710BFE035</string>
+</dict>
+</plist>

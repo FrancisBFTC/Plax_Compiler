@@ -1,0 +1,28 @@
+use * of <io_sys>
+use * of <file_sys>
+use * of <shell>
+
+<<< Let´s go write a file!! >>>
+@arq : ' '
+@data : ' '
+@arq : 'Arquivo.txt'
+@data : 'Hello Worllllllddd'
+@arq2 : ' '
+@data2 : ' '
+@arq2 : 'Arquivo2.txt'
+@data2 : 'Arquivo 2'
+
+<<< Estas funções imprime na tela uma String com o nome de arquivo colorido>>>
+ScreenColor[15]
+Show['Escrevendo arquivo ']
+ScreenColor[5]
+Show[@arq]
+ScreenColor[15]
+
+
+<<< Na Linha abaixo vamos criar este arquivo definido na variavel file >>>
+Create[@arq, @data]
+
+<<< Dá uma pausa no sistema >>>
+Command['PAUSE']
+Create[@arq2, @data2]

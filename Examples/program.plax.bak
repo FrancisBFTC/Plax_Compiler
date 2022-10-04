@@ -1,0 +1,18 @@
+use * of <io_sys>
+use * of <file_sys>
+use * of <shell>
+
+<<< Let´s go write a file!! >>>
+@arq : 'Arquivo.txt'
+@data : 'Estes serão os dados escritos'
+
+<<< Estas funções imprime na tela uma String com o nome de arquivo colorido>>>
+ScreenColor[15]
+Show['Escrevendo arquivo ']
+ScreenColor[2]
+Show[@arq]
+ScreenColor[15]
+
+
+<<< Na Linha abaixo vamos criar este arquivo definido na variavel file >>>
+Create['Arquivo.txt', 'Estes serão os dados escritos']

@@ -8,7 +8,7 @@ variables:
   ident: '[A-Za-z_][A-Za-z_0-9]*'
 contexts:
   main:
-    - match: \b(if|else|for|while|use|of|import|func)\b
+    - match: \b(if|else|for|while|use|of|import|func|return)\b
       scope: keyword.control.c
     - match: '[?!:\[\]*+=/^()]'
       scope: keyword.control.c

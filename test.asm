@@ -15,6 +15,7 @@ extern WriteFile
 extern malloc
 
 
+
 section .data
 
 	title 				db 'Informacao', 0
@@ -34,6 +35,9 @@ section .bss
 	BytesWritten 		resd 1
 
 section .text
+
+section .rodata
+	variavel db 'dados'
 
 main:
 
@@ -58,7 +62,7 @@ main:
 	mov r9, [rsp+40]
 	mov qword [rsp+32], 0
 	call WriteConsoleA
-
+	
 	mov 	edx, 15
 	mov 	rcx, rbx
 	call 	SetConsoleTextAttribute

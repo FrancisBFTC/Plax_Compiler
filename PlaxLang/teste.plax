@@ -8,10 +8,10 @@ use * of <file_sys>
 	Print a string on Screen
 >>>
 
-Show['Exibe esta String na tela']
+Show['Exibe esta String na tela\n']
 
 <<< Redirect a text to file from Shell command >>>
 Command['echo Hello World > file.txt']
 
 <<< Create a file with a filesystem operation >>>
-Create['Arquivo.txt', 'Dados para o arquivo']
+Create['Arquivo.txt', 'Dados para o arquivo\n\n']

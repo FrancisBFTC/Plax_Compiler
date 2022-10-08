@@ -21,6 +21,8 @@ int dll_count = 0;
 int pushes2 = 0;
 int i = 0;
 
+
+
 int bss = 0;
 int index_symbol = 0;
 bool is_func = false;
@@ -157,7 +159,7 @@ void StoreTypeVars(char *line)
                 }else{
                     assembly["type_vars"][var] = "INT";
                 }
-                //cout << "TYPE:" << assembly["type_vars"][var] << ", VAR: " << var << endl;
+               // cout << "TYPE:" << assembly["type_vars"][var] << ", VAR: " << var << endl;
             }
         }
     }else{
@@ -691,6 +693,7 @@ string execFunction(string name){
             }else{
                 if(is_plax_string){
                     stringstream var_conc;
+                    name_var = (name_var.find("/n") != -1) ? replace_all(name_var, "/n", "',13,10,'") : name_var;
                     var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
                     assembly["data"][data_index++] = var_conc.str();
                     var_conc.str("");
@@ -778,6 +781,7 @@ string execFunction(string name){
         }else{
             if(is_plax_string){
                 stringstream var_conc;
+                name_var = (name_var.find("/n") != -1) ? replace_all(name_var, "/n", "',13,10,'") : name_var;
                 var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
                 assembly["data"][data_index++] = var_conc.str();
                 var_conc.str("");
@@ -901,8 +905,10 @@ bool Interpret_Commands(FILE *file_read){
                             var_conc << "\t" << var << " db 1";
                         else
                             var_conc << "\t" << var << " db 0";
-                    }else
+                    }else{
+                        str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
                         var_conc << "\t" << var << " db '" << str << "',0";
+                    }
 
                     assembly["rodata"][rodata_index++] = var_conc.str();
                     var_conc.str("");
@@ -967,9 +973,10 @@ bool Interpret_Commands(FILE *file_read){
                         }else{
                             if(str == "NULL")
                                 var_conc << "\t" << var << " db 0";
-                            else
+                            else{
+                                str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
                                 var_conc << "\t" << var << " db '" << str << "',0";
-
+                            }
                             assembly["data"][i] = var_conc.str();
 
                             var_conc.str("");
@@ -1033,6 +1040,7 @@ bool Interpret_Commands(FILE *file_read){
                             stringstream addr_inst;
                             addr_inst << "\tmov [" << var_conc.str() << "], eax";
                             var_conc.str("");
+                            str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
                             var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
 
                             assembly["data"][i] = var_conc.str();
@@ -1070,6 +1078,8 @@ bool Interpret_Commands(FILE *file_read){
                             stringstream addr_inst;
                             addr_inst << "\tmov [" << var_conc.str() << "], eax";
                             var_conc.str("");
+                            string breakline = (str.find("\n") != -1) ? ",13,10" : "";
+                            str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
                             var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
 
                             assembly["data"][i] = var_conc.str();

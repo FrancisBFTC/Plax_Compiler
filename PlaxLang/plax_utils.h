@@ -632,7 +632,7 @@ string execFunction(string name){
         if(name[i] == ']')
             break;
 
-        if(name[i] == '@'){
+        if(name[i] == '@' && name[i-1] != '{'){
             is_variable = true;
             ++i;
         }
@@ -808,6 +808,83 @@ string execFunction(string name){
             is_variable = false;
         }else{
             if(is_plax_string){
+                cout << "STRING: " << name_var << endl;
+                // Alterar estratégia para Inteiros/Strings
+                stringstream querystr;
+                stringstream strconv;
+                stringstream strconv2;
+                int countst = 0;
+                if(name_var.find("{") != -1){
+                    bool is_querystr = false;
+                    assembly["text"][text_index++] = "\txor ebx, ebx";
+                    
+                    for(int j = 0; j < name_var.length(); j++){
+                        if(name_var[j] == '{'){
+                            j += 2;
+                            is_querystr = true;
+                        }
+                        if(name_var[j] == '}'){
+                            is_querystr = false;
+                            strconv << "{@" << querystr.str() << "}";
+                            
+                            stringstream staticstr;
+                            staticstr << "__" << push_name.str() << "_st__" << data_index;
+                            stringstream ebxconc;
+                            if(countst == 0){
+                                strconv2 << "'\n\t" << staticstr.str() << ".size equ $ - " << staticstr.str();
+                                ebxconc << "\tadd ebx, " << staticstr.str() << ".size";
+                                assembly["text"][text_index++] = ebxconc.str();
+                            }else{
+                                strconv2 << "'\n\t" << staticstr.str() << "_" << countst-1 << ".size equ $ - " << staticstr.str() << "_" << countst-1;
+                                ebxconc << "\tadd ebx, " << staticstr.str() << "_" << countst-1 << ".size";
+                                assembly["text"][text_index++] = ebxconc.str();
+                            }
+
+                            ebxconc.str("");
+                            string typequery = assembly["type_vars"][querystr.str()];
+                            if(typequery == "INT" || typequery == "CONST STRING" || typequery == "CONST INT"){
+                                strconv2 << "\n\tdd " << querystr.str() << " \n\t" << staticstr.str() << "_" << countst << " db '";
+                                ebxconc << "\tpush " << querystr.str() << endl;
+                                ebxconc << "\tcall strlen" << endl;
+                                ebxconc << "\tadd esp, 4" << endl;
+                                ebxconc << "\tadd ebx, eax";
+                                assembly["text"][text_index++] = ebxconc.str();
+                            }else{
+                                if(typequery == "STRING"){
+                                    strconv2 << "\n\tdd _" << querystr.str() << "_ \n\t" << staticstr.str() << "_" << countst << " db '";
+                                    ebxconc << "\tpush DWORD[_" << querystr.str() << "_]" << endl;
+                                    ebxconc << "\tcall strlen" << endl;
+                                    ebxconc << "\tadd esp, 4" << endl;
+                                    ebxconc << "\tadd ebx, eax";
+                                    assembly["text"][text_index++] = ebxconc.str();
+                                }
+                            }
+
+                            name_var.replace(name_var.find(strconv.str()), strconv.str().length(), strconv2.str());
+                            strconv2.str("");
+                            strconv.str("");
+                            querystr.str("");
+                            countst++;
+                        }
+                        if(is_querystr){
+                            querystr << name_var[j];
+                        }
+                    }
+
+                    stringstream lastaddr;
+                    lastaddr << "__" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+                    stringstream ebxlast;
+                    ebxlast << "\tadd ebx, " << lastaddr.str() << ".size";
+                    assembly["text"][text_index++] = ebxlast.str();
+
+                    // apenas fora de uma função por enquanto
+                    stringstream push_inst;
+                    push_inst << "\tpush ebx ";
+                    assembly["text"][text_index++] = push_inst.str();
+                    assembly["text"][text_index++] = "\tcall malloc";
+                    assembly["text"][text_index++] = "\tadd esp, 4";
+                }
+                cout << "CHANGE: " << name_var << endl;
                 stringstream var_conc;
                 name_var = (name_var.find("\\n") != -1) ? replace_all(name_var, "\\n", "',13,10,'") : name_var;
                 name_var = (name_var.find("\\t") != -1) ? replace_all(name_var, "\\t", "',9,'") : name_var;
@@ -833,7 +910,14 @@ string execFunction(string name){
                     string colorStr = colorconc.str();
                     name_var = replace_all(name_var, colorStr, "");
                 }
-                var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
+                var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0\n";
+
+                if(countst > 0){
+                    stringstream lastaddr;
+                    lastaddr << "\t__" << push_name.str() << "_st__" << data_index << "_" << countst-1; 
+                    var_conc << lastaddr.str() << ".size equ $ - __" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+                }
+
                 assembly["data"][data_index++] = var_conc.str();
                 var_conc.str("");
                 push_params << "\tpush __" << push_name.str() << "_st__" << data_index-1;
@@ -904,7 +988,9 @@ bool Interpret_Commands(FILE *file_read){
                 fgets(line, sizeof(line), file_read);
         }
 
-        if(contains(line, "@") && contains(line, ":") && !contains(line, "local") && !is_comment){
+        bool attrib = toString(line).find("@") < toString(line).find(":");
+
+        if(contains(line, "@") && contains(line, ":") && attrib && !contains(line, "local") && !is_comment){
                         
             str = getString(line);
             var = getVariable(line);

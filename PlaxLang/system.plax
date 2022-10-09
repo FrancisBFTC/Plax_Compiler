@@ -1,6 +1,7 @@
 use * of <../Modules/io_sys>
 
-Show['\x02 Hello World Verde\n']
-Show['\x04 Hello World Vermelho\n']
-Show['\x06 Hello World Amarelo\n']
-Show['\x0F']
+@name : 'Wenderson'
+@valor : ' 26'
+
+Show['O nome {@name} tem {@valor} anos']
+

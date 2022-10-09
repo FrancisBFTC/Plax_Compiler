@@ -13,15 +13,20 @@ section .data
 
 	STD_OUTPUT dd -11
 	STD_INPUT dd -10
-	buffer__2 db '      ',0
-	buffer__2.size equ $ - buffer__2
+	READED__2 db '    ',0
+	READED__2.size equ $ - READED__2
+	string__4 db '',13,10,' Hello World ',13,10,'',0
+	string__4.size equ $ - string__4
+	__Show_st__6 db ' Hello World ',13,10,'',0
+	__Show_st__7 db '',0
 
 section .bss
 
 	_return_funcs_ resd 1
 	_stdout_ resd 1 
 	_stdin_ resd 1 
-	_buffer_ resd 1 
+	_READED_ resd 1 
+	_string_ resd 1 
 
 
 section .text
@@ -35,21 +40,50 @@ main:
 	call GetStdHandle
 	add esp, 4
 	mov DWORD[_stdin_], eax
-	push buffer__2.size
+	push READED__2.size
 	call malloc
 	add esp, 4
-	mov [_buffer_], eax
+	mov [_READED_], eax
 	mov edi, eax
-	mov esi, buffer__2
-	mov ecx, buffer__2.size
+	mov esi, READED__2
+	mov ecx, READED__2.size
 	rep movsb
-
-	push DWORD[_buffer_]
-	call Input
+	push string__4.size
+	call malloc
 	add esp, 4
 
+	mov [_string_], eax
+	mov edi, eax
+	mov esi, string__4
+	mov ecx, string__4.size
+	rep movsb
 
-	push DWORD[_buffer_]
+	push 0x02
+	push DWORD[_stdout_]
+	call SetConsoleTextAttribute
+	add esp, 8
+	
+	push DWORD[_string_]
+	call Show
+	add esp, 4
+
+	push 0x04
+	push DWORD[_stdout_]
+	call SetConsoleTextAttribute
+	add esp, 8
+
+
+	push __Show_st__6
+	call Show
+	add esp, 4
+
+	push 0x0F
+	push DWORD[_stdout_]
+	call SetConsoleTextAttribute
+	add esp, 8
+
+
+	push __Show_st__7
 	call Show
 	add esp, 4
 
@@ -94,18 +128,23 @@ ScreenColor:
 	mov esp, ebp
 	pop ebp
 	ret
-Input:
+InputConsole:
 	push ebp
 	mov ebp, esp
-	push 0
-	push _return_funcs_
 
 	push DWORD[ebp + 8]
+	call Show
+	add esp, 4
+
+	push 0
+	push DWORD[_READED_]
+
+	push DWORD[ebp + 12]
 	call Size
 	add esp, 4
 	push eax
 
-	push DWORD[ebp + 8]
+	push DWORD[ebp + 12]
 	push DWORD[_stdin_]
 	call ReadConsoleA
 	add esp, 20

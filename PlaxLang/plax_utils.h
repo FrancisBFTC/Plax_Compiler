@@ -29,10 +29,12 @@ bool is_func = false;
 bool reading_func = false;
 bool use_all = false;
 bool is_comment = false;
+bool is_color = false;
 
 // Declarações de Protótipos
 string getString(char*);
 string getVariable(char*);
+string replace_all(string, string, string);
 int processOperationConst(string, int, int);
 void StoreTypeVars(char*);
 void parsingVariables(char*);
@@ -60,6 +62,7 @@ string getString(char *line)
         int i = 0;
         while (pos += 1){
             pos = lineStr.find("'", pos);
+
             if(pos != -1){
                 switch(i){
                     case 0: pos1 = pos; break;
@@ -73,7 +76,7 @@ string getString(char *line)
             i++;
                     
         }
-                    
+ 
         return lineStr.substr(pos1+1, pos2-pos1-1);
     }else{
         if(lineStr.find("import") == -1)
@@ -619,6 +622,7 @@ string execFunction(string name){
         return "$!";
 
     ++i;
+
     stringstream name_params;
     for(; name[i] != ']'; i++){
         
@@ -693,7 +697,31 @@ string execFunction(string name){
             }else{
                 if(is_plax_string){
                     stringstream var_conc;
-                    name_var = (name_var.find("/n") != -1) ? replace_all(name_var, "/n", "',13,10,'") : name_var;
+                    name_var = (name_var.find("\\n") != -1) ? replace_all(name_var, "\\n", "',13,10,'") : name_var;
+                    name_var = (name_var.find("\\t") != -1) ? replace_all(name_var, "\\t", "',9,'") : name_var;
+                    name_var = (name_var.find("\\v") != -1) ? replace_all(name_var, "\\v", "',11,'") : name_var;
+                    if(name_var.find("\\x") != -1){
+                        string strColor = name_var;
+                        int index_start = strColor.find("\\x")+2;
+                        strColor = strColor.substr(index_start, 2);
+
+                        stringstream color_inst;
+                        color_inst << "\tpush 0x" << strColor << endl;
+                        color_inst << "\tpush DWORD[_stdout_]" << endl;
+                        color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                        color_inst << "\tadd esp, 8" << endl;
+
+                        if(!is_func)
+                            assembly["text"][text_index++] = color_inst.str();
+                        else
+                            assembly["text_funcs"][text_funcs++] = color_inst.str(); 
+
+                        stringstream colorconc;
+                        colorconc << "\\x" << strColor;
+                        string colorStr = colorconc.str();
+                        name_var = replace_all(name_var, colorStr, "");
+                    }
+
                     var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
                     assembly["data"][data_index++] = var_conc.str();
                     var_conc.str("");
@@ -781,7 +809,30 @@ string execFunction(string name){
         }else{
             if(is_plax_string){
                 stringstream var_conc;
-                name_var = (name_var.find("/n") != -1) ? replace_all(name_var, "/n", "',13,10,'") : name_var;
+                name_var = (name_var.find("\\n") != -1) ? replace_all(name_var, "\\n", "',13,10,'") : name_var;
+                name_var = (name_var.find("\\t") != -1) ? replace_all(name_var, "\\t", "',9,'") : name_var;
+                name_var = (name_var.find("\\v") != -1) ? replace_all(name_var, "\\v", "',11,'") : name_var;
+                if(name_var.find("\\x") != -1){
+                    string strColor = name_var;
+                    int index_start = strColor.find("\\x")+2;
+                    strColor = strColor.substr(index_start, 2);
+
+                    stringstream color_inst;
+                    color_inst << "\tpush 0x" << strColor << endl;
+                    color_inst << "\tpush DWORD[_stdout_]" << endl;
+                    color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                    color_inst << "\tadd esp, 8" << endl;
+
+                    if(!is_func)
+                        assembly["text"][text_index++] = color_inst.str();
+                    else
+                        assembly["text_funcs"][text_funcs++] = color_inst.str();
+
+                    stringstream colorconc;
+                    colorconc << "\\x" << strColor;
+                    string colorStr = colorconc.str();
+                    name_var = replace_all(name_var, colorStr, "");
+                }
                 var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
                 assembly["data"][data_index++] = var_conc.str();
                 var_conc.str("");
@@ -906,7 +957,30 @@ bool Interpret_Commands(FILE *file_read){
                         else
                             var_conc << "\t" << var << " db 0";
                     }else{
-                        str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
+                        str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
+                        str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
+                        str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+                        if(str.find("\\x") != -1){
+                            string strColor = str;
+                            int index_start = strColor.find("\\x")+2;
+                            strColor = strColor.substr(index_start, 2);
+
+                            stringstream color_inst;
+                            color_inst << "\tpush 0x" << strColor << endl;
+                            color_inst << "\tpush DWORD[_stdout_]" << endl;
+                            color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                            color_inst << "\tadd esp, 8" << endl;
+
+                            if(!is_func)
+                                assembly["text"][text_index++] = color_inst.str();
+                            else
+                                assembly["text_funcs"][text_funcs++] = color_inst.str();
+
+                            stringstream colorconc;
+                            colorconc << "\\x" << strColor;
+                            string colorStr = colorconc.str();
+                            str = replace_all(str, colorStr, "");
+                        }
                         var_conc << "\t" << var << " db '" << str << "',0";
                     }
 
@@ -974,7 +1048,30 @@ bool Interpret_Commands(FILE *file_read){
                             if(str == "NULL")
                                 var_conc << "\t" << var << " db 0";
                             else{
-                                str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
+                                str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
+                                str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
+                                str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+                                if(str.find("\\x") != -1){
+                                    string strColor = str;
+                                    int index_start = strColor.find("\\x")+2;
+                                    strColor = strColor.substr(index_start, 2);
+
+                                    stringstream color_inst;
+                                    color_inst << "\tpush 0x" << strColor << endl;
+                                    color_inst << "\tpush DWORD[_stdout_]" << endl;
+                                    color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                                    color_inst << "\tadd esp, 8" << endl;
+
+                                    if(!is_func)
+                                        assembly["text"][text_index++] = color_inst.str();
+                                    else
+                                        assembly["text_funcs"][text_funcs++] = color_inst.str();
+
+                                    stringstream colorconc;
+                                    colorconc << "\\x" << strColor;
+                                    string colorStr = colorconc.str();
+                                    str = replace_all(str, colorStr, "");
+                                }
                                 var_conc << "\t" << var << " db '" << str << "',0";
                             }
                             assembly["data"][i] = var_conc.str();
@@ -1040,7 +1137,30 @@ bool Interpret_Commands(FILE *file_read){
                             stringstream addr_inst;
                             addr_inst << "\tmov [" << var_conc.str() << "], eax";
                             var_conc.str("");
-                            str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
+                            str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
+                            str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
+                            str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+
+                            stringstream color_inst;
+                            bool has_color = false;
+
+                             if(str.find("\\x") != -1){
+                                string strColor = str;
+                                int index_start = strColor.find("\\x")+2;
+                                strColor = strColor.substr(index_start, 2);
+
+                                color_inst << "\tpush 0x" << strColor << endl;
+                                color_inst << "\tpush DWORD[_stdout_]" << endl;
+                                color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                                color_inst << "\tadd esp, 8" << endl;
+
+                                stringstream colorconc;
+                                colorconc << "\\x" << strColor;
+                                string colorStr = colorconc.str();
+                                str = replace_all(str, colorStr, "");
+
+                                has_color = true;
+                            }
                             var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
 
                             assembly["data"][i] = var_conc.str();
@@ -1059,6 +1179,13 @@ bool Interpret_Commands(FILE *file_read){
                             var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
                             assembly["text"][text_index++] = var_conc.str();
                             assembly["text"][text_index++] = "\trep movsb";
+
+                            if(has_color){
+                                if(!is_func)
+                                    assembly["text"][text_index++] = color_inst.str();
+                                else
+                                    assembly["text_funcs"][text_funcs++] = color_inst.str();
+                            }
                         }else{
                             if(!assembly["realloc"][var]){
                                 push_inst << "\tpush " << var << "__" << i << ".size";
@@ -1078,8 +1205,28 @@ bool Interpret_Commands(FILE *file_read){
                             stringstream addr_inst;
                             addr_inst << "\tmov [" << var_conc.str() << "], eax";
                             var_conc.str("");
-                            string breakline = (str.find("\n") != -1) ? ",13,10" : "";
-                            str = (str.find("/n") != -1) ? replace_all(str, "/n", "',13,10,'") : str;
+                            str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
+                            str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
+                            str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+                            stringstream color_inst;
+                            bool has_color = false;
+                            if(str.find("\\x") != -1){
+                                string strColor = str;
+                                int index_start = strColor.find("\\x")+2;
+                                strColor = strColor.substr(index_start, 2);
+
+                                color_inst << "\tpush 0x" << strColor << endl;
+                                color_inst << "\tpush DWORD[_stdout_]" << endl;
+                                color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                                color_inst << "\tadd esp, 8" << endl;
+
+                                stringstream colorconc;
+                                colorconc << "\\x" << strColor;
+                                string colorStr = colorconc.str();
+                                str = replace_all(str, colorStr, "");
+
+                                has_color = true;
+                            }
                             var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
 
                             assembly["data"][i] = var_conc.str();
@@ -1098,6 +1245,13 @@ bool Interpret_Commands(FILE *file_read){
                             var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
                             assembly["text_funcs"][text_funcs++] = var_conc.str();
                             assembly["text_funcs"][text_funcs++] = "\trep movsb";
+
+                            if(has_color){
+                                if(!is_func)
+                                    assembly["text"][text_index++] = color_inst.str();
+                                else
+                                    assembly["text_funcs"][text_funcs++] = color_inst.str();
+                            }
                         }
 
                         i++;

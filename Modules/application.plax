@@ -3,16 +3,16 @@
 	utilizando função recursiva e entrada de dados do usuário!!
 >>>
 
-use * of <io_sys>
-use * of <file_sys>
-use * of <shell>
+use * of <../Modules/io_sys>
+use * of <../Modules/file_sys>
+use * of <../Modules/shell>
 
 <<< Buffer para entradas de usuário >>>
 @buffer : ' '
 @buffer : '                            '
 
 <<< Função para comandos do Prompt >>>
-func Prompt @text (
+func Prompt @text(
 	ScreenColor[2]
 	InputConsole[@text, @buffer]
 	ScreenColor[15]
@@ -22,3 +22,9 @@ func Prompt @text (
 
 	Prompt[@text]
 )
+
+func Editor @text (
+    InputConsole[@text, @buffer]
+    Editor['']
+)
+

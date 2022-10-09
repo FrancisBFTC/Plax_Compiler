@@ -1,4 +1,4 @@
-use * of <application>
+use * of <../Modules/application>
 
 Command['ECHO OFF']
 Command['CLS']

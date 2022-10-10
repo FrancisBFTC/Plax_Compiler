@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 
             //cout << golink_cmd << endl;
 
-            //system("del *.asm");
+            system("del *.asm");
             system("del *.obj");
 
             system(argv[2]);

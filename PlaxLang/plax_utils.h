@@ -159,7 +159,7 @@ void StoreTypeVars(char *line)
             }else{
                 if(contains(line, "'")){
                     assembly["type_vars"][var] = "STRING";
-                }else{
+                }else{        
                     assembly["type_vars"][var] = "INT";
                 }
                // cout << "TYPE:" << assembly["type_vars"][var] << ", VAR: " << var << endl;
@@ -808,16 +808,19 @@ string execFunction(string name){
             is_variable = false;
         }else{
             if(is_plax_string){
-                cout << "STRING: " << name_var << endl;
                 // Alterar estratégia para Inteiros/Strings
                 stringstream querystr;
                 stringstream strconv;
                 stringstream strconv2;
+                stringstream label_show;
+                stringstream copy_query;
+                int stack = 4;
                 int countst = 0;
-                if(name_var.find("{") != -1){
+                if(name_var.find("{") != -1){            
                     bool is_querystr = false;
                     assembly["text"][text_index++] = "\txor ebx, ebx";
-                    
+                    copy_query << "\tmov edi, eax" << endl;
+
                     for(int j = 0; j < name_var.length(); j++){
                         if(name_var[j] == '{'){
                             j += 2;
@@ -834,11 +837,17 @@ string execFunction(string name){
                                 strconv2 << "'\n\t" << staticstr.str() << ".size equ $ - " << staticstr.str();
                                 ebxconc << "\tadd ebx, " << staticstr.str() << ".size";
                                 assembly["text"][text_index++] = ebxconc.str();
+                                copy_query << "\tmov esi, " << staticstr.str() << endl;
+                                copy_query << "\tmov ecx, " << staticstr.str() << ".size" << endl;
                             }else{
                                 strconv2 << "'\n\t" << staticstr.str() << "_" << countst-1 << ".size equ $ - " << staticstr.str() << "_" << countst-1;
                                 ebxconc << "\tadd ebx, " << staticstr.str() << "_" << countst-1 << ".size";
                                 assembly["text"][text_index++] = ebxconc.str();
+                                copy_query << "\tmov esi, " << staticstr.str() << "_" << countst-1 << endl;
+                                copy_query << "\tmov ecx, " << staticstr.str() << "_" << countst-1 << ".size" << endl;
                             }
+
+                            copy_query << "\trep movsb" << endl;
 
                             ebxconc.str("");
                             string typequery = assembly["type_vars"][querystr.str()];
@@ -847,16 +856,28 @@ string execFunction(string name){
                                 ebxconc << "\tpush " << querystr.str() << endl;
                                 ebxconc << "\tcall strlen" << endl;
                                 ebxconc << "\tadd esp, 4" << endl;
-                                ebxconc << "\tadd ebx, eax";
+                                ebxconc << "\tadd ebx, eax" << endl;
+                                ebxconc << "\tmov [ebp + " << stack << "], eax";
                                 assembly["text"][text_index++] = ebxconc.str();
+
+                                copy_query << "\tmov esi, " << querystr.str() << endl;
+                                copy_query << "\tmov ecx, [ebp + " << stack << "]" << endl;
+                                copy_query << "\trep movsb" << endl;
+                                stack += 4;
                             }else{
                                 if(typequery == "STRING"){
                                     strconv2 << "\n\tdd _" << querystr.str() << "_ \n\t" << staticstr.str() << "_" << countst << " db '";
                                     ebxconc << "\tpush DWORD[_" << querystr.str() << "_]" << endl;
                                     ebxconc << "\tcall strlen" << endl;
                                     ebxconc << "\tadd esp, 4" << endl;
-                                    ebxconc << "\tadd ebx, eax";
+                                    ebxconc << "\tadd ebx, eax" << endl;
+                                    ebxconc << "\tmov [ebp + " << stack << "], eax";
                                     assembly["text"][text_index++] = ebxconc.str();
+
+                                    copy_query << "\tmov esi, DWORD[_" << querystr.str() << "_]" << endl;
+                                    copy_query << "\tmov ecx, [ebp + " << stack << "]" << endl;
+                                    copy_query << "\trep movsb" << endl;
+                                    stack += 4;
                                 }
                             }
 
@@ -883,27 +904,31 @@ string execFunction(string name){
                     assembly["text"][text_index++] = push_inst.str();
                     assembly["text"][text_index++] = "\tcall malloc";
                     assembly["text"][text_index++] = "\tadd esp, 4";
+                    label_show << "__" << push_name.str() << "_st__" << data_index << "_";
+                    push_inst.str("");
+                    push_inst << "\t" << label_show.str() << " resd 1";
+                    assembly["bss"][bss++] = push_inst.str();
+                    push_inst.str("");
+                    push_inst << "\tmov [" << label_show.str() << "], eax"; 
+                    assembly["text"][text_index++] = push_inst.str();
                 }
-                cout << "CHANGE: " << name_var << endl;
+
                 stringstream var_conc;
                 name_var = (name_var.find("\\n") != -1) ? replace_all(name_var, "\\n", "',13,10,'") : name_var;
                 name_var = (name_var.find("\\t") != -1) ? replace_all(name_var, "\\t", "',9,'") : name_var;
                 name_var = (name_var.find("\\v") != -1) ? replace_all(name_var, "\\v", "',11,'") : name_var;
+                bool contain_color = false;
+                stringstream color_inst;
                 if(name_var.find("\\x") != -1){
+                    contain_color = true;
                     string strColor = name_var;
                     int index_start = strColor.find("\\x")+2;
                     strColor = strColor.substr(index_start, 2);
 
-                    stringstream color_inst;
                     color_inst << "\tpush 0x" << strColor << endl;
                     color_inst << "\tpush DWORD[_stdout_]" << endl;
                     color_inst << "\tcall SetConsoleTextAttribute" << endl;
                     color_inst << "\tadd esp, 8" << endl;
-
-                    if(!is_func)
-                        assembly["text"][text_index++] = color_inst.str();
-                    else
-                        assembly["text_funcs"][text_funcs++] = color_inst.str();
 
                     stringstream colorconc;
                     colorconc << "\\x" << strColor;
@@ -914,14 +939,27 @@ string execFunction(string name){
 
                 if(countst > 0){
                     stringstream lastaddr;
-                    lastaddr << "\t__" << push_name.str() << "_st__" << data_index << "_" << countst-1; 
-                    var_conc << lastaddr.str() << ".size equ $ - __" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+                    lastaddr << "__" << push_name.str() << "_st__" << data_index << "_" << countst-1; 
+                    var_conc << "\t" << lastaddr.str() << ".size equ $ - __" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+                    copy_query << "\tmov esi, " << lastaddr.str() << endl;
+                    copy_query << "\tmov ecx, " << lastaddr.str() << ".size" << endl;
+                    copy_query << "\trep movsb" << endl; 
+                    assembly["text"][text_index++] = copy_query.str();
+                    push_params << "\tpush DWORD[" << label_show.str() << "]";
+                }else{
+                    push_params << "\tpush __" << push_name.str() << "_st__" << data_index;
                 }
 
                 assembly["data"][data_index++] = var_conc.str();
                 var_conc.str("");
-                push_params << "\tpush __" << push_name.str() << "_st__" << data_index-1;
                 
+                if(contain_color){
+                    if(!is_func)
+                        assembly["text"][text_index++] = color_inst.str();
+                    else
+                        assembly["text_funcs"][text_funcs++] = color_inst.str();
+                }
+
                 assembly["pushes_call2"][pushes2++] = push_params.str();
                 is_plax_string = false;
             }else{
@@ -1003,7 +1041,7 @@ bool Interpret_Commands(FILE *file_read){
             parsingVariables(line);
 
             if(is_constant){
-                if(isNumber(str)){
+                if(isNumber(str) && assembly["type_vars"][var] == "INT"){
                     if(!assembly["type_vars"][var].is_null())
                         type = assembly["type_vars"][var];
                     //cout << type << ": " << str << ", VAR: @" << var << endl;
@@ -1170,8 +1208,8 @@ bool Interpret_Commands(FILE *file_read){
                         }
                     }
                 }else{
-                    
-                    if(isNumber(str)){
+
+                    if(isNumber(str) && assembly["type_vars"][var] == "INT"){
                         if(!assembly["type_vars"][var].is_null())
                                 type = assembly["type_vars"][var];
                             

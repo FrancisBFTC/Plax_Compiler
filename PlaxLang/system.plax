@@ -1,7 +1,26 @@
 use * of <../Modules/io_sys>
+use * of <../Modules/shell>
 
-@name : 'Wenderson'
-@valor : ' 26'
+<<<
+@name : const['Francis']
+@idade : const['26']
+@robby : const['Programacao']
+@lang : const['Plax']
 
-Show['O nome {@name} tem {@valor} anos']
+Show['\x02 Me chamo {@name} e tenho {@idade} anos.']
+Show['Gosto de {@robby}\n']
+Show['Esta e a linguagem {@lang}']
+Show['\x0F ']
+>>>
 
+@name : ' '
+@name : '           '
+@idade : ' '
+@idade : '           '
+Show['\n']
+InputConsole['Digite um nome = ', @name]
+Show['\x02Seu nome e {@name}']
+ScreenColor[15]
+InputConsole['\nQual a sua idade? ', @idade]
+Show['\x06sua idade e {@idade}']
+Show['\x0F']

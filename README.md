@@ -28,11 +28,12 @@ setx PATH "%PATH%;C:\Plax_Compiler\PlaxLang;"
 
 # 📜 Como Compilar Código em Plax
 
-**Crie um arquivo com extensão .plax (Exemplo: prog.plax), crie algoritmos PLAX** <a href="#">lendo esta documentação</a> **e execute:**
+**Crie um arquivo com extensão .plax (Exemplo: prog.plax), crie algoritmos PLAX** vendo <a href="#tutorial">Tutorial da Linguagem</a> **e execute:**
 ```bat
 plax prog.plax prog.exe
 ```
 
+<a name="tutorial"></a>
 # Tutorial da Linguagem
 
   ## Crie seu primeiro Hello World

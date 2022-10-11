@@ -26,6 +26,13 @@ git clone https://github.com/FrancisBFTC/Plax_Compiler.git
 setx PATH "%PATH%;C:\Plax_Compiler\PlaxLang;"
 ```
 
+**Para compilar o projeto de compilador em C++, execute no CMD (ou clique 2 vezes em build.bat):**
+```bat
+cd Plax_Compiler
+cd PlaxLang
+build.bat"
+```
+
 # 📜 Como Compilar Código em Plax
 
 **Crie um arquivo com extensão .plax (Exemplo: prog.plax), crie algoritmos PLAX** vendo <a href="#tutorial">Tutorial da Linguagem</a> **e execute:**

@@ -26,12 +26,22 @@ git clone https://github.com/FrancisBFTC/Plax_Compiler.git
 setx PATH "%PATH%;C:\Plax_Compiler\PlaxLang;"
 ```
 
-# 📜 Como Compilar Fonte em Plax
+# 📜 Como Compilar Código em Plax
 
 **Crie um arquivo com extensão .plax (Exemplo: prog.plax), crie algoritmos PLAX** <a href="#">lendo esta documentação</a> **e execute:**
 ```bat
 plax prog.plax prog.exe
 ```
+
+# Tutorial da Linguagem
+
+  ## Crie seu primeiro Hello World
+  
+  ```cs
+    use * of <io_sys>
+    
+    Show['Hello World!!']
+  ```
 
 
 

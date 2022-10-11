@@ -28,8 +28,7 @@ setx PATH "%PATH%;C:\Plax_Compiler\PlaxLang;"
 
 **Para compilar o projeto de compilador em C++, execute no CMD (ou clique 2 vezes em build.bat):**
 ```bat
-cd Plax_Compiler
-cd PlaxLang
+cd C:\Plax_Compiler\PlaxLang
 build.bat"
 ```
 

@@ -1,6 +1,6 @@
 # Compilador Plax v0.2.4
 
-Plax (**P**redefined **L**anguage of **A**utomated e**X**ecution) ou (**P**rocedural **L**anguage of **A**utomated e**X**ecution) é uma linguagem de programação compilada, multi-paradigma e dinâmica no intuito de ser flexível como JavaScript/Python e veloz como C/Assembly, a linguagem contém junções de paradigmas e diferentes sintaxes.
+Plax (**P**redefined **L**anguage of **A**utomated e**X**ecution) é uma linguagem de programação compilada, multi-paradigma e dinâmica no intuito de ser flexível como JavaScript/Python e veloz como C/Assembly, a linguagem contém junções de paradigmas e diferentes sintaxes.
 
 <img src="https://imgur.com/huBWl6V.png">
 

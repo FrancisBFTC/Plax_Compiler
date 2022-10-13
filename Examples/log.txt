@@ -4,4 +4,5 @@ Processando comando: start chrome
               Processando comando: echo ola mundo
             Processando comando: dir
 ola mundo
-            
+            Processando comando: start chrome
+              

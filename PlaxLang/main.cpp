@@ -109,7 +109,14 @@ int main(int argc, char** argv) {
 
             //GoLink /console /entry main test.obj kernel32.dll user32.dll
             stringstream golink;
-            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2];
+            string source = argv[1];
+
+            if(argv[2] == NULL)
+                source.replace(source.find("plax"), 4, "exe");
+            else
+                source = argv[2];
+            
+            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << source;
 
             for(int i = 0; i < assembly["dlls"].size(); i++)
             {
@@ -124,7 +131,7 @@ int main(int argc, char** argv) {
             system("del *.asm");
             system("del *.obj");
 
-            system(argv[2]);
+            system(source.c_str());
 
         }
     }

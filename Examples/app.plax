@@ -1,0 +1,29 @@
+<<<
+    Hello World! Como estão? Hoje irei mostrar como concatenar Strings em Plax
+    e utilizar um caractere especial para coloração de Strings no CMD,
+    também iremos utilizar a função InputConsole para entrada de dados
+>>>
+
+use * of <../Modules/io_sys>
+use * of <../Modules/shell>
+
+@name : ' '
+@name : '            '
+@idade : ' '
+@idade : '     '
+
+
+<<< Concatenando buffer de entrada do usuário >>>
+Show['\n']
+InputConsole['Digite seu nome? ', @name]
+Show['\x02Seu nome e {@name}']
+ScreenColor[15]
+InputConsole['\nQual e a sua idade? ', @idade]
+Show['\x06Sua idade e {@idade}']
+Show['\x0F']
+
+Command['PAUSE']
+Command['CLS']
+Command['app']
+
+<<<  Valeu pessoal por assistir o vídeo! Em breve novas atualizações!!! :D >>>

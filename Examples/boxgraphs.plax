@@ -1,0 +1,10 @@
+use * of <../Modules/graphics>
+
+BoxBeep['Mensagem', 'Mensagem COM som']
+Box['Mensagem', 'Mensagem SEM som']
+BoxInfo['Informacao', 'Esta caixa esta sendo feita em Plax']
+BoxError['Error', 'Ocorreu um erro no seu sistema!']
+BoxWarning['Aviso', 'Atencao: O sistema esta sujeito a erros!']
+BoxQuestion['Pergunta', 'Precisa de alguma ajuda?']
+BoxHelp['Ajuda', 'Um novo recurso - Para mais informacoes clique em Ajuda']
+Message[0, 'Aprenda como programar em Plax', 'Ajuda', @MB_HELP]

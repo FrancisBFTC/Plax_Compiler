@@ -5,4 +5,77 @@ Processando comando: start chrome
             Processando comando: dir
 ola mundo
             Processando comando: start chrome
+              Processando comando: set var=4
+                 Processando comando: echo %var%
+                Processando comando: echo var
+
+                Processando comando: set p/ var=
+               Processando comando: set p/ name="digite algo"
+ Processando comando: exit
+ name="digite algo"
+ Processando comando: exit
+ name="digite algo"
+ Processando comando: echo ola 
+="digite algo"
+ Processando comando: close
+                     Processando comando: bat
+
+                     Processando comando: *.bat
+                     Processando comando: diskpart
+                  Processando comando: list disk
+                 Processando comando: regedit
+
+                 Processando comando: config
+
+
+                 Processando comando: ipconfig
+
+                 Processando comando: cls
+fig
+
+                 Processando comando: msconfig
+
+                 Processando comando: msconfig
+
+                 Processando comando: conf
+ig
+
+                 Processando comando: control
+
+
+                 Processando comando: msconf
+
+
+
+                 Processando comando: ms
+nf
+
+
+
+                 Processando comando: msconfig.exe
+              Processando comando: msc
+fig.exe
+              Processando comando: dwm
+fig.exe
+              Processando comando: manager
+exe
+              Processando comando: dvmgr
+
+exe
+              Processando comando: devmgr
+
+exe
+              Processando comando: devmng
+
+exe
+              Processando comando: devconf
+exe
+              Processando comando: commands
+xe
+              Processando comando: /?
+ands
+xe
+              Processando comando: help
+ds
+xe
               

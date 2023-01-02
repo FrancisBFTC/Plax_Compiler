@@ -1,4 +1,5 @@
-CONFIGURAÇÕES DE COLORAÇÃO SINTÁTICA DA LINGUAGEM PLAX (SYNTAX HIGHTLIGHT)
+
+CONFIGURAÇÕES DE COLORAÇÃO SINTÁTICA DA LINGUAGEM PLAX (SYNTAX HIGHLIGHT)
 
 * Primeiro entre na pasta Highlight e verifique 3 pastas:
 	do Notepad++, Sublime e VSCode.

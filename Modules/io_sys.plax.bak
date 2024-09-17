@@ -11,6 +11,8 @@
 
 @READED : ' '
 @READED : '    '
+@val : ' '
+@val : 'Hello'
 
 <<< Retorna o tamanho da String >>>
 func Size @string (

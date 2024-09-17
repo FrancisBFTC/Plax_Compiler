@@ -9,7 +9,7 @@ use * of <../Modules/shell>
 	@val1 : 0
 	@val2 : 1
 	Show[@val]
-	return 'Oi'
+	return @val
 )
 
 @num1 : const[5]

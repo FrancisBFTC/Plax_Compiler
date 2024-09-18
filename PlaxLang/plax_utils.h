@@ -736,11 +736,19 @@ string execFunction(string name){
                         if(typevar == "CONST STRING"){
                             push_params << "\tpush " << name_var;
                         }else{
+                            if(typevar == "FUNCTION"){
+                                push_params << "\tcall " << name_var << "\n";
+                                push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
+                            }
                             push_params << "\tpush DWORD[_" << name_var << "_]";
+                            cout << "Entrou -> " << name_var << " : " << typevar << endl;
+                            cout << push_params.str() << endl;
+                            system("PAUSE");
                         }
                     }
 
                 }else{
+                    system("pause");
                     if(!assembly["local_funcs"][func_name][name_var].is_null()){
                         string params = assembly["local_funcs"][func_name][name_var];
                         push_params << "\tpush " << params;
@@ -756,6 +764,10 @@ string execFunction(string name){
                                     if(typevar == "CONST STRING"){
                                         push_params << "\tpush " << name_var;
                                     }else{
+                                        if(typevar == "FUNCTION"){
+                                            push_params << "\tcall " << name_var << "\n";
+                                            push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
+                                        }
                                         push_params << "\tpush DWORD[_" << name_var << "_]";
                                     }
                                 }
@@ -839,6 +851,8 @@ string execFunction(string name){
         if(!assembly["type_vars"][name_var].is_null())
             typevar = assembly["type_vars"][name_var];
 
+        //cout << name_var << " : " << typevar << endl;
+        //system("PAUSE");
 
         if(is_variable){
             if(!is_func){
@@ -848,7 +862,14 @@ string execFunction(string name){
                     if(typevar == "CONST STRING"){
                         push_params << "\tpush " << name_var;
                     }else{
+                        if(typevar == "FUNCTION"){
+                            push_params << "\tcall " << name_var << "\n";
+                            push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
+                        }
                         push_params << "\tpush DWORD[_" << name_var << "_]";
+                        cout << "Entrou -> " << name_var << " : " << typevar << endl;
+                        cout << push_params.str() << endl;
+                        system("PAUSE");
                     }
                 }
                 assembly["pushes_call2"][pushes2++] = push_params.str();
@@ -868,6 +889,10 @@ string execFunction(string name){
                                 if(typevar == "CONST STRING"){
                                     push_params << "\tpush " << name_var;
                                 }else{
+                                    if(typevar == "FUNCTION"){
+                                        push_params << "\tcall " << name_var << "\n";
+                                        push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
+                                    }
                                     push_params << "\tpush DWORD[_" << name_var << "_]";
                                 }
                             }
@@ -1505,28 +1530,27 @@ bool process_func_command(char *line){
         local_offsets = 0;
         is_func = true;
 
-        char *line1 = line;
-        if(toString(line).find(":") != -1){
-            int index1 = toString(line).find(":")+1;
-            int index2 = toString(line).length();
-            line = (char*) toString(line).substr(index1, index2).c_str();
-        }
+        stringstream lineconc;
+        string line1;
+        for(int i = 1; i < strlen(line); i++)
+            lineconc << line[i];
 
-        string nameFunc = toString(line);
+        line1 = lineconc.str();
+
+        string nameFunc = (line1.find(":") != -1) ? line1 : toString(line);
 
         if(nameFunc.find("(") == -1)
             return false;
 
-        int index_end = (contains(line, "@")) ? nameFunc.find("@") : nameFunc.find("(");
+        int index_end = (nameFunc.find("@") != -1) ? nameFunc.find("@") : nameFunc.find("(");
         int index_start = nameFunc.find("func")+5;
         index_end = index_end - (index_start + 1);
 
-        nameFunc = nameFunc.substr(index_start, index_end);
+        nameFunc = nameFunc.substr(index_start, ((index_end == -1) ? 1 : index_end));
         nameFunc = toString(EraseSpace((char *) nameFunc.c_str()));
 
         // Funções anônimas
         if(nameFunc.length() < 1 || nameFunc[0] == '(' || nameFunc[0] == '@'){
-            line = line1;
             index_end = toString(line).find(":");
             if(index_end != -1){
                 index_start = toString(line).find("@");
@@ -1535,8 +1559,10 @@ bool process_func_command(char *line){
                     return false;
                 nameFunc = toString(line).substr(index_start+1, index_end);
                 nameFunc = toString(EraseSpace((char *) nameFunc.c_str()));
-                //cout << nameFunc << endl;
-                //system("PAUSE");
+                stringstream func_variable;
+                assembly["type_vars"][nameFunc] = "FUNCTION";
+                func_variable << "\t_" << nameFunc << "_ resd 1";
+                assembly["bss"][bss++] = func_variable.str();
             }
             else
                 return false;
@@ -1550,7 +1576,7 @@ bool process_func_command(char *line){
         assembly["text_funcs"][text_funcs++] = "\tpush ebp";
         assembly["text_funcs"][text_funcs++] = "\tmov ebp, esp";
 
-        process_function_params(line);
+        process_function_params((char*) line1.c_str());
     }
     return true;
 }

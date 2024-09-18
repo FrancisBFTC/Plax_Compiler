@@ -16,25 +16,11 @@ section .data
 	STD_INPUT dd -10
 	READED__2 db '    ',0
 	READED__2.size equ $ - READED__2
-	valor dd 39
-	String__5 db 'Hello World',0
-	String__5.size equ $ - String__5
-	__test_st__7 db 'Oi',0
+	__test_st__4 db 'Ola mundo',0
 
-	__Show_st__8 db '',0
+	__Show_st__5 db '',13,10,'',0
 
-	__Show_st__9 db 'A formula de '
-	__Show_st__9.size equ $ - __Show_st__9
-	dd num1 
-	__Show_st__9_0 db ' com '
-	__Show_st__9_0.size equ $ - __Show_st__9_0
-	dd num2 
-	__Show_st__9_1 db ' e '
-	__Show_st__9_1.size equ $ - __Show_st__9_1
-	dd num3 
-	__Show_st__9_2 db '',0
-	__Show_st__9_2.size equ $ - __Show_st__9_2
-	__Command_st__10 db 'Pause',0
+	__Command_st__6 db 'Pause',0
 
 
 section .bss
@@ -43,19 +29,8 @@ section .bss
 	_stdout_ resd 1 
 	_stdin_ resd 1 
 	_READED_ resd 1 
-	_String_ resd 1 
-	__Show_st__9_ resd 1
+	_test_ resd 1
 
-section .rodata
-
-	__Return_test_0 db  'Oi',0
-
-	num1 db '5',0
-	num1.size equ $ - num1
-	num2 db '2',0
-	num2.size equ $ - num2
-	num3 db '10',0
-	num3.size equ $ - num3
 
 section .text
 
@@ -76,88 +51,18 @@ main:
 	mov esi, READED__2
 	mov ecx, READED__2.size
 	rep movsb
-	push String__5.size
-	call malloc
-	add esp, 4
-	mov [_String_], eax
-	mov edi, eax
-	mov esi, String__5
-	mov ecx, String__5.size
-	rep movsb
 
-	push __test_st__7
+	push __test_st__4
 	call test
 	add esp, 4
 
-	push 0x02
-	push DWORD[_stdout_]
-	call SetConsoleTextAttribute
-	add esp, 8
 
-
-	push __Show_st__8
-	call Show
-	add esp, 4
-
-	xor ebx, ebx
-	add ebx, __Show_st__9.size
-	push num1
-	call strlen
-	add esp, 4
-	add ebx, eax
-	mov [ebp + 4], eax
-	add ebx, __Show_st__9_0.size
-	push num2
-	call strlen
-	add esp, 4
-	add ebx, eax
-	mov [ebp + 8], eax
-	add ebx, __Show_st__9_1.size
-	push num3
-	call strlen
-	add esp, 4
-	add ebx, eax
-	mov [ebp + 12], eax
-	add ebx, __Show_st__9_2.size
-	push ebx 
-	call malloc
-	add esp, 4
-	mov [__Show_st__9_], eax
-	mov edi, eax
-	mov esi, __Show_st__9
-	mov ecx, __Show_st__9.size
-	rep movsb
-	mov esi, num1
-	mov ecx, [ebp + 4]
-	rep movsb
-	mov esi, __Show_st__9_0
-	mov ecx, __Show_st__9_0.size
-	rep movsb
-	mov esi, num2
-	mov ecx, [ebp + 8]
-	rep movsb
-	mov esi, __Show_st__9_1
-	mov ecx, __Show_st__9_1.size
-	rep movsb
-	mov esi, num3
-	mov ecx, [ebp + 12]
-	rep movsb
-	mov esi, __Show_st__9_2
-	mov ecx, __Show_st__9_2.size
-	rep movsb
-
-
-	push DWORD[__Show_st__9_]
+	push __Show_st__5
 	call Show
 	add esp, 4
 
 
-	push 15
-	call ScreenColor
-	add esp, 4
-
-
-	push __Command_st__10
+	push __Command_st__6
 	call Command
 	add esp, 4
 
@@ -237,10 +142,11 @@ Command:
 test:
 	push ebp
 	mov ebp, esp
-	mov DWORD[ebp - 4], 0
-	mov DWORD[ebp - 8], 1
-$$
-	mov eax, 	__Return_test_0
+
+	push DWORD[ebp + 8]
+	call Show
+	add esp, 4
+
 	mov esp, ebp
 	pop ebp
 	ret

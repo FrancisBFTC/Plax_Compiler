@@ -1,3 +1,2 @@
-nasm -f win32 teste.plax.asm -o teste.plax.obj
-GoLink /console /entry main teste.plax.obj /fo teste.exe msvcrt.dll kernel32.dll user32.dll
-pause
+nasm -f win32 system.plax.asm -o system.plax.obj
+GoLink /console /entry main system.plax.obj /fo system.exe msvcrt.dll kernel32.dll userenv.dll

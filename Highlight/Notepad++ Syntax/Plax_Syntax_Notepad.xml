@@ -1,5 +1,5 @@
 <NotepadPlus>
-    <UserLang name="Plax" ext=".plax .px" udlVersion="2.1">
+    <UserLang name="Plax" ext="plax" udlVersion="2.1">
         <Settings>
             <Global caseIgnored="no" allowFoldOfComments="no" foldCompact="yes" forcePureLC="0" decimalSeparator="0" />
             <Prefix Keywords1="no" Keywords2="no" Keywords3="yes" Keywords4="no" Keywords5="no" Keywords6="no" Keywords7="no" Keywords8="no" />
@@ -13,7 +13,7 @@
             <Keywords name="Numbers, suffix1"></Keywords>
             <Keywords name="Numbers, suffix2"></Keywords>
             <Keywords name="Numbers, range"></Keywords>
-            <Keywords name="Operators1">? : ! * &lt; &gt; [ ] ( ) { }</Keywords>
+            <Keywords name="Operators1">? : ! * &lt; &gt; [ ] ( ) { } + - / ^ %</Keywords>
             <Keywords name="Operators2"></Keywords>
             <Keywords name="Folders in code1, open">(</Keywords>
             <Keywords name="Folders in code1, middle"></Keywords>
@@ -24,7 +24,7 @@
             <Keywords name="Folders in comment, open">&lt;&lt;&lt;</Keywords>
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close">&gt;&gt;&gt;</Keywords>
-            <Keywords name="Keywords1">func import return use of </Keywords>
+            <Keywords name="Keywords1">func import return use of const Int Char Bool Float String true false NaN yes no null</Keywords>
             <Keywords name="Keywords2"></Keywords>
             <Keywords name="Keywords3">@</Keywords>
             <Keywords name="Keywords4"></Keywords>

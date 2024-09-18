@@ -1,0 +1,191 @@
+Processando comando: start chrome
+              Processando comando: start chrome
+              Processando comando: start chrome
+              Processando comando: echo ola mundo
+            Processando comando: dir
+ola mundo
+            Processando comando: start chrome
+              Processando comando: set var=4
+                 Processando comando: echo %var%
+                Processando comando: echo var
+
+                Processando comando: set p/ var=
+               Processando comando: set p/ name="digite algo"
+ Processando comando: exit
+ name="digite algo"
+ Processando comando: exit
+ name="digite algo"
+ Processando comando: echo ola 
+="digite algo"
+ Processando comando: close
+                     Processando comando: bat
+
+                     Processando comando: *.bat
+                     Processando comando: diskpart
+                  Processando comando: list disk
+                 Processando comando: regedit
+
+                 Processando comando: config
+
+
+                 Processando comando: ipconfig
+
+                 Processando comando: cls
+fig
+
+                 Processando comando: msconfig
+
+                 Processando comando: msconfig
+
+                 Processando comando: conf
+ig
+
+                 Processando comando: control
+
+
+                 Processando comando: msconf
+
+
+
+                 Processando comando: ms
+nf
+
+
+
+                 Processando comando: msconfig.exe
+              Processando comando: msc
+fig.exe
+              Processando comando: dwm
+fig.exe
+              Processando comando: manager
+exe
+              Processando comando: dvmgr
+
+exe
+              Processando comando: devmgr
+
+exe
+              Processando comando: devmng
+
+exe
+              Processando comando: devconf
+exe
+              Processando comando: commands
+xe
+              Processando comando: /?
+ands
+xe
+              Processando comando: help
+ds
+xe
+              Processando comando: echo ola mundo
+            Processando comando: firefox
+mundo
+            Processando comando: notepad
+mundo
+            Processando comando: start
+
+mundo
+            Processando comando: adm
+
+
+mundo
+            Processando comando: diskpart
+undo
+            Processando comando: exit
+rt
+undo
+            Processando comando: exit
+rt
+undo
+            Processando comando: exit
+rt
+undo
+            Processando comando: out
+
+rt
+undo
+            Processando comando: diskpart
+                  Processando comando: diskpart
+                  Processando comando: msconfig
+                  Processando comando: config
+
+                  Processando comando: msconfig
+                  Processando comando: notepad
+
+                  Processando comando: start
+
+
+                  Processando comando: virtualbox
+                Processando comando: vboxmanage
+                Processando comando: vboxmanager
+               Processando comando: notepad
+er
+               Processando comando: echo ola mundo
+            Processando comando: cls
+ola mundo
+            Processando comando: exit
+la mundo
+            Processando comando: close
+a mundo
+            Processando comando: ipconfig
+undo
+            Processando comando: dwm
+fig
+undo
+            Processando comando: dir
+fig
+undo
+            Processando comando: cd ..
+g
+undo
+            Processando comando: dir
+
+g
+undo
+            Processando comando: cd C:\Plax_Compiler
+       Processando comando: dir
+\Plax_Compiler
+       Processando comando: log.txt
+x_Compiler
+       Processando comando: del log.txt
+mpiler
+       Processando comando: Plax
+g.txt
+mpiler
+       Processando comando: Golink
+txt
+mpiler
+       Processando comando: cls
+k
+txt
+mpiler
+       Processando comando: dir
+k
+txt
+mpiler
+       Processando comando: boxgraphs
+
+mpiler
+       Processando comando: boxgraphs
+
+mpiler
+       Processando comando: boxgraphs.plax
+ler
+       Processando comando: set var=4
+                 Processando comando: echo %var%
+                Processando comando: echo %var%
+                Processando comando: %var%
+ar%
+                Processando comando: echo var
+
+                Processando comando: set p/ var=
+               Processando comando: set /p var=
+               Processando comando: set var =
+
+               Processando comando: set /p var = "Hello"
+      Processando comando: echo %var%
+ "Hello"
+      Processando comando: InputConsole
+Hello"
+      

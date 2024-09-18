@@ -1,0 +1,7 @@
+use * of <../Modules/application>
+
+Command['ECHO OFF']
+Command['CLS']
+Show['***** PROGRAMA DE COMANDOS ***** \n\n']
+
+Prompt['command> ']

@@ -1,0 +1,30 @@
+<<<
+	Olá galera! Hoje irei implementar um mini-prompt de comando em Plax,
+	utilizando função recursiva e entrada de dados do usuário!!
+>>>
+
+use * of <../Modules/io_sys>
+use * of <../Modules/file_sys>
+use * of <../Modules/shell>
+
+<<< Buffer para entradas de usuário >>>
+@buffer : ' '
+@buffer : '                            '
+
+<<< Função para comandos do Prompt >>>
+func Prompt @text(
+	ScreenColor[2]
+	InputConsole[@text, @buffer]
+	ScreenColor[15]
+	Command[@buffer]
+	Append['log.txt', 'Processando comando: ']
+	Append['log.txt', @buffer]
+
+	Prompt[@text]
+)
+
+func Editor @text (
+    InputConsole[@text, @buffer]
+    Editor['']
+)
+

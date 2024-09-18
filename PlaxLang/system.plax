@@ -1,0 +1,12 @@
+use * of <../Modules/io_sys>
+use * of <../Modules/shell>
+
+@test : func @str(
+	Show[@str]
+)
+
+test['Ola mundo']
+Show['\n']
+
+Command['Pause']
+

@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
             assembly["bss"][bss++] = "\t_return_funcs_ resd 1";
 
             i = 0;
-            
+
             bool finish = Interpret_Commands(file_read);
             if(!finish)
                 return 0;
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
             for(int i = 0; i < assembly["data"].size(); i++){
                 if(i == 0)
                     output << "section .data" << endl << endl;
-                
+
                 code = assembly["data"][i];
                 output << code << endl;
             }
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
             for(int i = 0; i < assembly["bss"].size(); i++){
                 if(i == 0)
                     output << "section .bss" << endl << endl;
-                
+
                 code = assembly["bss"][i];
                 output << code << endl;
             }
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
             for(int i = 0; i < assembly["rodata"].size(); i++){
                 if(i == 0)
                     output << "section .rodata" << endl << endl;
-                
+
                 code = assembly["rodata"][i];
                 output << code << endl;
             }
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
             for(int i = 0; i < assembly["text"].size(); i++){
                 if(i == 0)
                     output << "section .text" << endl << endl;
-                
+
                 code = assembly["text"][i];
                 output << code << endl;
             }
@@ -109,7 +109,14 @@ int main(int argc, char** argv) {
 
             //GoLink /console /entry main test.obj kernel32.dll user32.dll
             stringstream golink;
-            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << argv[2];
+            string source = argv[1];
+
+            if(argv[2] == NULL)
+                source.replace(source.find("plax"), 4, "exe");
+            else
+                source = argv[2];
+
+            golink << "GoLink /console /entry main " << file.str() << ".obj /fo " << source;
 
             for(int i = 0; i < assembly["dlls"].size(); i++)
             {
@@ -121,10 +128,10 @@ int main(int argc, char** argv) {
 
             //cout << golink_cmd << endl;
 
-            system("del *.asm");
+            //system("del *.asm");
             system("del *.obj");
 
-            system(argv[2]);
+            system(source.c_str());
 
         }
     }

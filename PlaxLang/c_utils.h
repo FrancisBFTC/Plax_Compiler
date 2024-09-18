@@ -61,4 +61,24 @@ bool isNumber(string str)
     return true;
 }
 
+string replace_all(string s, string x, string y){
+	int pos = 0;
+    bool is_equal = false;
+
+    for(int i = 0; i < s.length(); i++){
+        pos = i;
+        for(int j = 0; j < x.length(); j++)
+            is_equal = (s[i++] == x[j]) ? true : false;
+
+        i = pos;
+
+        if(is_equal){
+            s.replace(i, x.length(), y);
+            i = 0;
+            is_equal = false;
+        }
+    }
+	return s;
+}
+
 #endif

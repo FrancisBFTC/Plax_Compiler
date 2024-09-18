@@ -1,0 +1,48 @@
+<<<
+    Funções de operações de arquivos
+    Autor: Wender Francis
+    Linguagem: Plax
+>>>
+
+<<< Constantes de acesso para arquivos >>>
+@FILE_UPDATE : 2
+@FILE_APPEND : 4
+
+<<<
+    Create a file using kernel32.dll
+    CREATE_ALWAYS = 2
+>>>
+
+func CreateF @filename, @access, @share (
+    return import kernel32.CreateFileA @filename, @access, @share, 0, @FILE_UPDATE, 0, 0
+)
+
+<<<
+    Write a file using kernel32.dll
+    Generic Access Rights => GENERIC_WRITE (30) | GENERIC_READ (31)
+        11000000 00000000 00000000 00000000 = 0xC0000000
+>>>
+
+func Create @file, @buffer (
+    import kernel32.WriteFile CreateF[@file, @FILE_UPDATE, 3], @buffer, Size[@buffer], 0, 0
+)
+
+<<<
+    Append a file using kernel32.dll
+    
+>>>
+
+func AppendF @filename, @access, @share (
+    return import kernel32.CreateFileA @filename, @access, @share, 0, @FILE_APPEND, 0 ,0
+)
+
+<<<
+    Append a file using kernel32.dll
+    File Access Rights Constants => FILE_APPEND_DATA (bit 2)
+        00000000 00000000 00000000 00000100 = 0x00000004
+    Generic Access Rights => GENERIC_WRITE (30) | GENERIC_READ (31)
+>>>
+
+func Append @file, @buffer (
+    import kernel32.WriteFile AppendF[@file, @FILE_APPEND, 3], @buffer, Size[@buffer], 0, 0
+)

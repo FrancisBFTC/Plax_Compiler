@@ -9,6 +9,9 @@
 @stdout : import kernel32.GetStdHandle @STD_OUTPUT
 @stdin  : import kernel32.GetStdHandle @STD_INPUT
 
+@READED : ' '
+@READED : '    '
+
 <<< Retorna o tamanho da String >>>
 func Size @string (
     return import msvcrt.strlen @string
@@ -24,3 +27,8 @@ func ScreenColor @color (
     import kernel32.SetConsoleTextAttribute @stdout, @color
 )
 
+<<< Funcao para ler as entradas do Console >>>
+func InputConsole @text, @buffer (
+    Show[@text]
+    import kernel32.ReadConsoleA @stdin, @buffer, Size[@buffer], @READED, 0
+)

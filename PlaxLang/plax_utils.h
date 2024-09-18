@@ -12,6 +12,7 @@ string str;
 string var;
 string func_name;
 string type;
+string token;
 // ----------------------------------------
 
 // Variáveis inteiros
@@ -46,7 +47,9 @@ string getVariable(char*);
 string replace_all(string, string, string);
 string execFunction(string);
 int processOperationConst(string, int, int);
+void ignore_comments(char*, FILE*);
 void process_function_params(char*);
+bool process_variables_attrib(char*);
 bool process_func_command(char*);
 bool process_return_command(char*);
 bool process_functions_call(char*);
@@ -100,13 +103,15 @@ string getString(char *line)
 
 	string lineStr = toString(line);
 
-    int index_end = lineStr.length();
-    int index_start = lineStr.find(":")+1;
+    //int index_end = lineStr.length();
+    //int index_start = lineStr.find(":")+1;
 
-    index_end = index_end - (index_start + 1);
+    //index_end = index_end - (index_start + 1);
 
-    lineStr = lineStr.substr(index_start, index_end);
-	lineStr[lineStr.length()] = 0;
+    //lineStr = lineStr.substr(index_start, index_end);
+    int sizestr = lineStr.length();
+    lineStr = getstring(lineStr, ":", sizestr);
+	lineStr[sizestr] = 0;
 
     if(contains(line, "'")){
         size_t pos = 0;
@@ -132,10 +137,12 @@ string getString(char *line)
 
         return lineStr.substr(pos1+1, pos2-pos1-1);
     }else{
-        if(lineStr.find("import") == -1)
-            return toString(EraseSpace((char *) lineStr.c_str()));
-        else
-            return lineStr;
+        //if(lineStr.find("import") == -1)
+        //    return toString(EraseSpace((char *) lineStr.c_str()));
+        //else
+        //    return lineStr;
+
+        return (lineStr.find("import") == -1) ? spaceclear(lineStr) : lineStr;
     }
 }
 
@@ -1101,32 +1108,61 @@ string execFunction(string name){
     return push_call.str();
 }
 
-bool Interpret_Commands(FILE *file_read){
+bool Interpret_Commands(FILE *file){
     char line[1024];
-    while((fgets(line, sizeof(line), file_read)) != NULL){
+    while((fgets(line, sizeof(line), file)) != NULL){
 
-        // Lexer de comentários
-        if(contains(line, "<<<") || contains(line, ">>>")){
+        // LEXER DE COMENTÁRIOS
+        ignore_comments(line, file);
 
-            string lineComm = toString(line);
-            int j = 0;
-            while(lineComm[j] == ' ' || lineComm[j] == 0x09) j++;
+        // LEXER DE VARIÁVEIS : INT, STRING, FLOAT E BOOL
+        if(!process_variables_attrib(line))
+            return false;
 
-            if(lineComm[j] == '<' && lineComm[j+1] == '<' && lineComm[j+1] == '<'){
-                is_comment = true;
-                fgets(line, sizeof(line), file_read);
-            }
-            for(; lineComm[j] != '\n'; j++){
-                if(lineComm[j] == '>' && lineComm[j+1] == '>' && lineComm[j+1] == '>'){
-                    is_comment = false;
-                    //fgets(line, sizeof(line), file_read);
-                }
-            }
-            if(contains(line, ">>>") && lineComm.find("<<<") == -1)
-                fgets(line, sizeof(line), file_read);
+        if(!process_func_command(line))
+            return false;
+
+        if(!process_import_command(toString(line)))
+            return false;
+
+        if(!process_return_command(line))
+            return false;
+
+        if(!process_functions_call(line))
+            return false;
+
+        if(!process_use_command(line))
+            return false;
+
+    }
+
+    return true;
+}
+
+void ignore_comments(char *line, FILE *file){
+    if(contains(line, "<<<") || contains(line, ">>>")){
+
+        string lineComm = toString(line);
+        int j = 0;
+        while(lineComm[j] == ' ' || lineComm[j] == 0x09) j++;
+
+        if(lineComm[j] == '<' && lineComm[j+1] == '<' && lineComm[j+1] == '<'){
+            is_comment = true;
+            fgets(line, sizeof(line), file);
         }
+        for(; lineComm[j] != '\n'; j++){
+            if(lineComm[j] == '>' && lineComm[j+1] == '>' && lineComm[j+1] == '>'){
+                is_comment = false;
+                //fgets(line, sizeof(line), file_read);
+            }
+        }
+        if(contains(line, ">>>") && lineComm.find("<<<") == -1)
+            fgets(line, sizeof(line), file);
+    }
+}
 
-        // Lexer de variáveis
+bool process_variables_attrib(char *line){
+
         bool attrib = toString(line).find("@") < toString(line).find(":");
 
         if(contains(line, "@") && contains(line, ":") && attrib && !contains(line, "local") && !contains(line, "func") && !is_comment){
@@ -1489,23 +1525,6 @@ bool Interpret_Commands(FILE *file_read){
             data_index = i;
         }
 
-        if(!process_func_command(line))
-            return false;
-
-        if(!process_import_command(toString(line)))
-            return false;
-
-        if(!process_return_command(line))
-            return false;
-
-        if(!process_functions_call(line))
-            return false;
-
-        if(!process_use_command(line))
-            return false;
-
-    }
-
     return true;
 }
 
@@ -1542,30 +1561,26 @@ bool process_func_command(char *line){
         if(nameFunc.find("(") == -1)
             return false;
 
-        int index_end = (nameFunc.find("@") != -1) ? nameFunc.find("@") : nameFunc.find("(");
-        int index_start = nameFunc.find("func")+5;
-        index_end = index_end - (index_start + 1);
 
-        nameFunc = nameFunc.substr(index_start, ((index_end == -1) ? 1 : index_end));
-        nameFunc = toString(EraseSpace((char *) nameFunc.c_str()));
+        token = substring(nameFunc, "func", "@");
+        if(token == "")
+            token = substring(nameFunc, "func", "(");
+
+        nameFunc = spaceclear(token);
+
 
         // Funções anônimas
         if(nameFunc.length() < 1 || nameFunc[0] == '(' || nameFunc[0] == '@'){
-            index_end = toString(line).find(":");
-            if(index_end != -1){
-                index_start = toString(line).find("@");
-                index_end = index_end - (index_start + 1);
-                if(index_start == -1)
-                    return false;
-                nameFunc = toString(line).substr(index_start+1, index_end);
-                nameFunc = toString(EraseSpace((char *) nameFunc.c_str()));
+            token = substring(toString(line), "@", ":");
+            if(token == "")
+                return false;
+
+                nameFunc = spaceclear(token);
+
                 stringstream func_variable;
                 assembly["type_vars"][nameFunc] = "FUNCTION";
                 func_variable << "\t_" << nameFunc << "_ resd 1";
                 assembly["bss"][bss++] = func_variable.str();
-            }
-            else
-                return false;
         }
 
         func_name = nameFunc;
@@ -1616,11 +1631,7 @@ bool process_return_command(char *line){
     if(contains(line, "return") && !is_comment){
         string lineStr = toString(line);
 
-        int index_end = lineStr.length();
-        int index_start = lineStr.find("return")+6;
-
-        index_end = index_end - (index_start + 1);
-        lineStr = lineStr.substr(index_start, index_end);
+        lineStr = getstring(lineStr, "return", lineStr.length());
 
         stringstream strbreak;
 
@@ -1634,20 +1645,20 @@ bool process_return_command(char *line){
         }else{
             stringstream lineStr2;
             lineStr2 << lineStr;
-            string lineStr_nospace = toString(EraseSpace((char *) lineStr2.str().c_str()));
-            if(isNumber(lineStr_nospace))
-                strbreak << "\tmov eax, " << lineStr_nospace.c_str();
+            string lineStrNoSpace = spaceclear(lineStr2.str());
+            if(isNumber(lineStrNoSpace))
+                strbreak << "\tmov eax, " << lineStrNoSpace.c_str();
             else{
-                if(lineStr_nospace[0] == '@'){
-                    lineStr_nospace = replace_all(lineStr_nospace, "@", "");
-                    if(!assembly["vars"][lineStr_nospace].is_null())
-                        if(assembly["type_vars"][lineStr_nospace] == types[V_STRING])
-                            strbreak << "\tmov eax, DWORD[_" << lineStr_nospace << "_]";
+                if(lineStrNoSpace[0] == '@'){
+                    lineStrNoSpace = replace_all(lineStrNoSpace, "@", "");
+                    if(!assembly["vars"][lineStrNoSpace].is_null())
+                        if(assembly["type_vars"][lineStrNoSpace] == types[V_STRING])
+                            strbreak << "\tmov eax, DWORD[_" << lineStrNoSpace << "_]";
                         else
-                            strbreak << "\tmov eax, DWORD[" << lineStr_nospace << "]";
+                            strbreak << "\tmov eax, DWORD[" << lineStrNoSpace << "]";
                     else{
-                        if(!assembly["local_funcs"][func_name][lineStr_nospace].is_null()){
-                            string var_param = assembly["local_funcs"][func_name][lineStr_nospace];
+                        if(!assembly["local_funcs"][func_name][lineStrNoSpace].is_null()){
+                            string var_param = assembly["local_funcs"][func_name][lineStrNoSpace];
                             strbreak << "\tmov eax, " << var_param;
                         }else{
                             cout << "A variável no retorno de função não existe!" << endl;
@@ -1701,21 +1712,9 @@ bool process_use_command(char *line){
         while(lineUse[j] == ' ' || lineUse[j] == 0x09) j++;
 
         if(lineUse[j] == 'u' && lineUse[j+1] == 's' && lineUse[j+2] == 'e'){
-            int index_end = lineUse.find("of");
-            int index_start = lineUse.find("use")+4;
-
-            index_end = index_end - (index_start + 1);
-
             string lineOf = lineUse;
-            lineUse = lineUse.substr(index_start, index_end);
-            lineUse = toString(EraseSpace((char *) lineUse.c_str()));
-
-            index_end = lineOf.length();
-            index_start = lineOf.find("of")+3;
-
-            index_end = index_end - (index_start + 1);
-            lineOf = lineOf.substr(index_start, index_end);
-            lineOf = toString(EraseSpace((char *) lineOf.c_str()));
+            lineUse = spaceclear(substring(lineUse, "use", "of"));
+            lineOf = spaceclear(getstring(lineOf, "of", lineOf.length()));
 
             stringstream of_file;
             if(lineOf.find(".plax") == -1)
@@ -1733,7 +1732,7 @@ bool process_use_command(char *line){
                 return false;
             }
 
-            if(lineOf == "*" || lineOf == "*.*")
+            if(lineUse == "*" || lineUse == "*.*")
                 use_all = true;
 
             bool finish = Interpret_Commands(file_inc);

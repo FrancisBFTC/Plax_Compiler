@@ -1,11 +1,12 @@
 use * of <../Modules/io_sys>
 use * of <../Modules/shell>
 
-@test : func @str(
-	Show[@str]
+@test : func (
+	return 'Ola mundo'
+	
 )
 
-test['Ola mundo']
+Show[@test]
 Show['\n']
 
 Command['Pause']

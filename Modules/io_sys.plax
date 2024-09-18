@@ -15,6 +15,7 @@
 <<< Retorna o tamanho da String >>>
 func Size @string (
     return import msvcrt.strlen @string
+	
 )
 
 <<< Imprime uma String na tela >>>

@@ -28,7 +28,7 @@ string toString(char *str)
 // Verifica se um char* contém uma String
 bool contains(char* first, string second)
 {
-	return (toString(first).find(second) == -1) ? false : true;         
+	return (toString(first).find(second) == -1) ? false : true;
 }
 
 // Apaga espaços e TABs de um dado
@@ -79,6 +79,28 @@ string replace_all(string s, string x, string y){
         }
     }
 	return s;
+}
+
+string substring(string str, string start_s, string end_s){
+    if(str.find(start_s) == -1 || str.find(end_s) == -1)
+        return "";
+
+    int start_i = str.find(start_s) + start_s.length();
+    int end_i = (str.find(end_s) - (start_i + 1));
+    return str.substr(start_i, (end_i == -1) ? 1 : end_i);
+}
+
+string getstring(string str, string start_s, int end_size){
+    if(str.find(start_s) == -1)
+        return "";
+
+    int start_i = str.find(start_s) + start_s.length();
+    int end_i = (end_size - (start_i + 1));
+    return str.substr(start_i, (end_i == -1) ? 1 : end_i);
+}
+
+string spaceclear(string str){
+    return toString(EraseSpace((char *) str.c_str()));
 }
 
 #endif

@@ -96,7 +96,7 @@ string getstring(string str, string start_s, int end_size){
 
     int start_i = str.find(start_s) + start_s.length();
     int end_i = (end_size - (start_i + 1));
-    return str.substr(start_i, (end_i == -1) ? 1 : end_i);
+    return str.substr(start_i, end_i);
 }
 
 string spaceclear(string str){

@@ -3,6 +3,24 @@
 
 #include "c_utils.h"
 
+#define ignore_comments(line, file)\
+        if(contains(line, "<<<") || contains(line, ">>>")){ \
+            string lineComm = toString(line); \
+            int j = 0; \
+            while(lineComm[j] == ' ' || lineComm[j] == 0x09) j++; \
+\
+            if(lineComm[j] == '<' && lineComm[j+1] == '<' && lineComm[j+1] == '<'){ \
+                is_comment = true; \
+                fgets(line, sizeof(line), file); \
+            } \
+            for(; lineComm[j] != '\n'; j++){\
+                if(lineComm[j] == '>' && lineComm[j+1] == '>' && lineComm[j+1] == '>')\
+                    is_comment = false;\
+            } \
+            if(contains(line, ">>>") && lineComm.find("<<<") == -1) \
+                fgets(line, sizeof(line), file); \
+        } \
+
 // Objetos do compilador
 json assembly;
 
@@ -43,11 +61,11 @@ bool is_constant = false;
 // Declarações de Protótipos
 // ----------------------------------------
 string getString(char*);
+string getstring(string, string, int);
 string getVariable(char*);
 string replace_all(string, string, string);
 string execFunction(string);
 int processOperationConst(string, int, int);
-void ignore_comments(char*, FILE*);
 void process_function_params(char*);
 bool process_variables_attrib(char*);
 bool process_func_command(char*);
@@ -103,15 +121,8 @@ string getString(char *line)
 
 	string lineStr = toString(line);
 
-    //int index_end = lineStr.length();
-    //int index_start = lineStr.find(":")+1;
-
-    //index_end = index_end - (index_start + 1);
-
-    //lineStr = lineStr.substr(index_start, index_end);
-    int sizestr = lineStr.length();
-    lineStr = getstring(lineStr, ":", sizestr);
-	lineStr[sizestr] = 0;
+    lineStr = getstring(lineStr, ":", lineStr.length());
+	//lineStr[lineStr.length()] = 0;
 
     if(contains(line, "'")){
         size_t pos = 0;
@@ -137,12 +148,7 @@ string getString(char *line)
 
         return lineStr.substr(pos1+1, pos2-pos1-1);
     }else{
-        //if(lineStr.find("import") == -1)
-        //    return toString(EraseSpace((char *) lineStr.c_str()));
-        //else
-        //    return lineStr;
-
-        return (lineStr.find("import") == -1) ? spaceclear(lineStr) : lineStr;
+        return (lineStr.find("import") == -1) ?  spaceclear(lineStr) : lineStr;
     }
 }
 
@@ -748,9 +754,9 @@ string execFunction(string name){
                                 push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
                             }
                             push_params << "\tpush DWORD[_" << name_var << "_]";
-                            cout << "Entrou -> " << name_var << " : " << typevar << endl;
-                            cout << push_params.str() << endl;
-                            system("PAUSE");
+                            //cout << "Entrou -> " << name_var << " : " << typevar << endl;
+                            //cout << push_params.str() << endl;
+                            //system("PAUSE");
                         }
                     }
 
@@ -874,9 +880,9 @@ string execFunction(string name){
                             push_params << "\tmov DWORD[_" << name_var << "_], eax\n";
                         }
                         push_params << "\tpush DWORD[_" << name_var << "_]";
-                        cout << "Entrou -> " << name_var << " : " << typevar << endl;
-                        cout << push_params.str() << endl;
-                        system("PAUSE");
+                        //cout << "Entrou -> " << name_var << " : " << typevar << endl;
+                        //cout << push_params.str() << endl;
+                        //system("PAUSE");
                     }
                 }
                 assembly["pushes_call2"][pushes2++] = push_params.str();
@@ -1112,8 +1118,8 @@ bool Interpret_Commands(FILE *file){
     char line[1024];
     while((fgets(line, sizeof(line), file)) != NULL){
 
-        // LEXER DE COMENTÁRIOS
-        ignore_comments(line, file);
+        // IGNORADOR DE COMENTÁRIOS (MACRO)
+        ignore_comments(line, file)
 
         // LEXER DE VARIÁVEIS : INT, STRING, FLOAT E BOOL
         if(!process_variables_attrib(line))
@@ -1139,28 +1145,6 @@ bool Interpret_Commands(FILE *file){
     return true;
 }
 
-void ignore_comments(char *line, FILE *file){
-    if(contains(line, "<<<") || contains(line, ">>>")){
-
-        string lineComm = toString(line);
-        int j = 0;
-        while(lineComm[j] == ' ' || lineComm[j] == 0x09) j++;
-
-        if(lineComm[j] == '<' && lineComm[j+1] == '<' && lineComm[j+1] == '<'){
-            is_comment = true;
-            fgets(line, sizeof(line), file);
-        }
-        for(; lineComm[j] != '\n'; j++){
-            if(lineComm[j] == '>' && lineComm[j+1] == '>' && lineComm[j+1] == '>'){
-                is_comment = false;
-                //fgets(line, sizeof(line), file_read);
-            }
-        }
-        if(contains(line, ">>>") && lineComm.find("<<<") == -1)
-            fgets(line, sizeof(line), file);
-    }
-}
-
 bool process_variables_attrib(char *line){
 
         bool attrib = toString(line).find("@") < toString(line).find(":");
@@ -1169,7 +1153,12 @@ bool process_variables_attrib(char *line){
 
             str = getString(line);
             var = getVariable(line);
+            //cout << "STR: " << str << endl;
+            //cout << "VARIABLE: " << var << endl;
+            //system("PAUSE");
+
             StoreTypeVars(line);
+
 
             bool exist_var = (!assembly["vars"][var].is_null()) ? true : false;
             if(!is_func)
@@ -1287,12 +1276,11 @@ bool process_variables_attrib(char *line){
                             //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
 
                         if(str.find("import") != -1){
-                            //cout << str << endl;
                             stringstream strbreak;
                             strbreak << str << "\n";
                             bool success = process_import_command(strbreak.str());    //strbreak.str()
                             if(!success)
-                                return 0;
+                                return false;
 
                             var_conc << "\t_" << var << "_" << " resd 1 ";
                             assembly["bss"][bss++] = var_conc.str();
@@ -1561,7 +1549,6 @@ bool process_func_command(char *line){
         if(nameFunc.find("(") == -1)
             return false;
 
-
         token = substring(nameFunc, "func", "@");
         if(token == "")
             token = substring(nameFunc, "func", "(");
@@ -1712,6 +1699,7 @@ bool process_use_command(char *line){
         while(lineUse[j] == ' ' || lineUse[j] == 0x09) j++;
 
         if(lineUse[j] == 'u' && lineUse[j+1] == 's' && lineUse[j+2] == 'e'){
+
             string lineOf = lineUse;
             lineUse = spaceclear(substring(lineUse, "use", "of"));
             lineOf = spaceclear(getstring(lineOf, "of", lineOf.length()));

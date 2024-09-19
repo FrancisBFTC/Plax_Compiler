@@ -3,7 +3,6 @@ use * of <../Modules/shell>
 
 @test : func (
 	return 'Ola mundo'
-	
 )
 
 Show[@test]

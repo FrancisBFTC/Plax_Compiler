@@ -5,7 +5,7 @@
 >>>
 
 @STD_OUTPUT : -11
-@STD_INPUT 	: -10
+@STD_INPUT : -10
 @stdout : import kernel32.GetStdHandle @STD_OUTPUT
 @stdin  : import kernel32.GetStdHandle @STD_INPUT
 

@@ -700,43 +700,54 @@ string execFunction(string name){
     bool is_variable = false;
     bool is_plax_string = false;
     bool no_params = true;
-    while(name[i] == ' ' || name[i] == 0x09) i++;
+    bool is_sub_function = false;
+    int bracket = 1;
 
-    for(; name[i] != '['; i++)
-        push_name << name[i];
+    while(name[i] == ' ' || name[i] == 0x09) i++;
+    for(; name[i] != '['; i++) push_name << name[i];
+    no_params = (name[++i] == ']');
 
     if(assembly["local_funcs"][push_name.str()].is_null())
         return "$!";
 
-    ++i;
+    cout << "INICIO:" << name << endl;
+    system("PAUSE");
 
     stringstream name_params;
-    for(; name[i] != ']'; i++){
+    for(; name[i] != ']' || is_sub_function; i++){
 
         while((name[i] == ' ' || name[i] == 0x09) && !is_plax_string) i++;
+        //no_params = (name[i] == ']') ? true : false; // CHANGED
+        //if(name[i] == ']')    // EXCLUDED
+        //    break;
 
-        no_params = (name[i] == ']') ? true : false;
-        if(name[i] == ']')
-            break;
-
-        if(name[i] == '@' && name[i-1] != '{'){
-            is_variable = true;
-            ++i;
-        }
-
-        if(name[i] == '\''){
-            if(!is_plax_string)
+        if(!is_sub_function){
+            is_sub_function = (name[i] == '[');
+            if(name[i] == '@' && name[i-1] != '{'){
+                is_variable = true;
                 ++i;
-
-            is_plax_string = true;
+            }
+            if(name[i] == '\''){
+                if(!is_plax_string)
+                    ++i;
+                is_plax_string = true;
+            }
         }
 
-        if(name[i] != ','){
-            if(name[i] != '\'')
-                name_params << name[i];
+        if(name[i] == '[')
+            ++bracket;
+        if(name[i] == ']')
+            --bracket;
+
+        //name[i] != '\'' &&
+        if(name[i] != ',' && bracket != 0){
+            name_params << name[i];
         }else{
             // Processar parâmetros do meio
             string name_var = name_params.str();
+            cout << "PROCESSANDO: " << name_var << endl;
+            system("PAUSE");
+
             string typevar = "NO";
             if(!assembly["type_vars"][name_var].is_null())
                 typevar = assembly["type_vars"][name_var];
@@ -831,14 +842,19 @@ string execFunction(string name){
                     if(isNumber(name_var)){
                         push_params << "\tpush " << name_var;
                     }else{
-                        /*
+
                         push_params << execFunction(name_var);
+                        is_sub_function = false;
+
                         if(push_params.str() == "$!"){
                             cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                             return "$!";
                         }
+                        cout << "PROCESSOU: " << name_var << endl;
+                        system("PAUSE");
+
                         reading_func = false;
-                        */
+
                         push_params << "\tpush eax" << endl;
                     }
 
@@ -855,6 +871,7 @@ string execFunction(string name){
 
     stringstream push_call;
 
+    /*
     if(no_params){
         push_call << "\tcall " << push_name.str() << endl;
     }else{
@@ -1078,33 +1095,33 @@ string execFunction(string name){
                 if(isNumber(name_var)){
                     push_params << "\tpush " << name_var;
                 }else{
-                    /*
+
                     push_params << execFunction(name_var);
                     if(push_params.str() == "$!"){
                         cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                         return "$!";
                     }
                     reading_func = false;
-                    */
                    push_params << "\tpush eax" << endl;
                 }
                 assembly["pushes_call2"][pushes2++] = push_params.str();
             }
         }
+    }
+    */
 
-        name_params.str("");
-        push_params.str("");
+    name_params.str("");
+    push_params.str("");
 
-        push_params << "\tcall " << push_name.str();
-        push_call << endl;
+    push_params << "\tcall " << push_name.str();
+    push_call << endl;
 
-        for(int x = assembly["pushes_call2"].size()-1; x >= 0 ; x--){
-            string push_call_str = assembly["pushes_call2"][x];
-            push_call << push_call_str << endl;
-            if(x == 0){
-                push_call << push_params.str() << endl;
-                push_call << "\tadd esp, " << assembly["pushes_call2"].size() * 4 << endl;
-            }
+    for(int x = assembly["pushes_call2"].size()-1; x >= 0 ; x--){
+        string push_call_str = assembly["pushes_call2"][x];
+        push_call << push_call_str << endl;
+        if(x == 0){
+            push_call << push_params.str() << endl;
+            push_call << "\tadd esp, " << assembly["pushes_call2"].size() * 4 << endl;
         }
     }
 

@@ -5,7 +5,11 @@ use * of <../Modules/shell>
 	return 'Ola mundo'
 )
 
-Show[@test]
+func make @str (
+	return @str
+)
+
+Show[make['Hello']]
 Show['\n']
 
 Command['Pause']

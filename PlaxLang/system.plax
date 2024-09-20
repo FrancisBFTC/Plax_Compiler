@@ -5,11 +5,12 @@ use * of <../Modules/shell>
 	return @str
 )
 
-func hello @str (
+func make @str (
 	return @str
 )
 
-Show[hello['oi']]
+Show[make['Hello']]
+Show['\n']
 
 <<< Command['Pause'] >>>
 

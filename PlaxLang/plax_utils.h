@@ -765,7 +765,6 @@ string execFunction(string name){
                     }
 
                 }else{
-                    system("pause");
                     if(!assembly["local_funcs"][func_name][name_var].is_null()){
                         string params = assembly["local_funcs"][func_name][name_var];
                         push_params << "\tpush " << params;
@@ -838,12 +837,16 @@ string execFunction(string name){
                         push_params << execFunction(name_var);
                         is_sub_function = false;
 
+						cout << "PROCESSOU: " << name_var << endl;
+						cout << "PROCESSOU i: " << name[i] << endl;
+						cout << "SUB_FUNCTION: " << is_sub_function << endl;
+                        system("PAUSE");
+						
                         if(push_params.str() == "$!"){
                             cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                             return "$!";
                         }
-                        cout << "PROCESSOU: " << name_var << endl;
-                        system("PAUSE");
+                   
 
                         reading_func = false;
 

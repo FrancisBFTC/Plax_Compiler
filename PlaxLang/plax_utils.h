@@ -48,6 +48,7 @@ int bss = 0;
 int index_symbol = 0;
 // ----------------------------------------
 
+
 // Variáveis booleanas
 // ----------------------------------------
 bool is_func = false;
@@ -122,7 +123,6 @@ string getString(char *line)
 	string lineStr = toString(line);
 
     lineStr = getstring(lineStr, ":", lineStr.length());
-	//lineStr[lineStr.length()] = 0;
 
     if(contains(line, "'")){
         size_t pos = 0;
@@ -155,15 +155,8 @@ string getString(char *line)
 string getVariable(char *line)
 {
     string lineStr = toString(line);
-
-    int index_end = lineStr.find(":");
-    int index_start = lineStr.find("@")+1;
-
-    index_end = index_end - (index_start + 1);
-
-    string variable = lineStr.substr(index_start, index_end);
-
-    return toString(EraseSpace((char *) variable.c_str()));
+    string variable = substring(lineStr, "@", ":");
+    return spaceclear(variable);
 }
 
 int processOperationConst(string operation, int counter, int j){
@@ -700,6 +693,7 @@ string execFunction(string name){
     bool is_variable = false;
     bool is_plax_string = false;
     bool no_params = true;
+    int bracket = 0;
     while(name[i] == ' ' || name[i] == 0x09) i++;
 
     for(; name[i] != '['; i++)
@@ -716,8 +710,10 @@ string execFunction(string name){
         while((name[i] == ' ' || name[i] == 0x09) && !is_plax_string) i++;
 
         no_params = (name[i] == ']') ? true : false;
-        if(name[i] == ']')
+
+        if(name[i] == ']'){
             break;
+        }
 
         if(name[i] == '@' && name[i-1] != '{'){
             is_variable = true;
@@ -831,14 +827,18 @@ string execFunction(string name){
                     if(isNumber(name_var)){
                         push_params << "\tpush " << name_var;
                     }else{
-                        /*
+                        cout << "Entrou 3" << endl;
+                        system("PAUSE");
                         push_params << execFunction(name_var);
                         if(push_params.str() == "$!"){
                             cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                             return "$!";
                         }
                         reading_func = false;
-                        */
+
+                        if(push_params.str() == "$$")
+                            return "$$";
+
                         push_params << "\tpush eax" << endl;
                     }
 
@@ -1078,14 +1078,21 @@ string execFunction(string name){
                 if(isNumber(name_var)){
                     push_params << "\tpush " << name_var;
                 }else{
-                    /*
-                    push_params << execFunction(name_var);
+
+                    cout << "Entrou 4" << endl;
+                    system("PAUSE");
+                    stringstream name_function;
+                    name_function << name_var << "]";
+                    push_params << execFunction(name_function.str());
                     if(push_params.str() == "$!"){
                         cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                         return "$!";
                     }
                     reading_func = false;
-                    */
+
+                    if(push_params.str() == "$$")
+                        return "$$";
+
                    push_params << "\tpush eax" << endl;
                 }
                 assembly["pushes_call2"][pushes2++] = push_params.str();
@@ -1125,18 +1132,23 @@ bool Interpret_Commands(FILE *file){
         if(!process_variables_attrib(line))
             return false;
 
+        // LEXER DE DECLARAÇÃO DE FUNÇÕES
         if(!process_func_command(line))
             return false;
 
+        // LEXER DE IMPORTAÇÃO DE DLLS E FUNÇÕES EXTERNAS
         if(!process_import_command(toString(line)))
             return false;
 
+        // LEXER DE RETORNO DE FUNÇÕES
         if(!process_return_command(line))
             return false;
 
+        // LEXER DE CHAMADA DE FUNÇÕES
         if(!process_functions_call(line))
             return false;
 
+        // LEXER DE USO DA LIB PLAX
         if(!process_use_command(line))
             return false;
 
@@ -1153,10 +1165,6 @@ bool process_variables_attrib(char *line){
 
             str = getString(line);
             var = getVariable(line);
-            //cout << "STR: " << str << endl;
-            //cout << "VARIABLE: " << var << endl;
-            //system("PAUSE");
-
             StoreTypeVars(line);
 
 

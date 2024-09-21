@@ -1,16 +1,17 @@
 use * of <../Modules/io_sys>
 use * of <../Modules/shell>
 
-@test : func @str(
+@getString1 : func @str(
 	return @str
 )
 
-func make @str (
+func getString2 @str (
 	return @str
 )
 
-Show[make['Hello']]
+Show[getString1['Hello ']]
+Show[getString2['World!!']]
 Show['\n']
 
-<<< Command['Pause'] >>>
+Command['Pause']
 

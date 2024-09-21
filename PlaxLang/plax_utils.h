@@ -703,16 +703,15 @@ string execFunction(string name){
     if(assembly["local_funcs"][push_name.str()].is_null())
         return "$!";
 
-    cout << "INICIO:" << name << endl;
-    system("PAUSE");
+    //cout << "INICIO: " << name << endl;
+    //cout << "FUNCTION NAME: " << push_name.str() << endl;
+    //cout << "NAME[I]: " << name[i] << endl;
+    //system("PAUSE");
 
     stringstream name_params;
-    for(; name[i] != ']' || is_sub_function; i++){
+    int sizename = (name[name.length()-1] == '\n') ? name.length()-1 : name.length();
 
-        while((name[i] == ' ' || name[i] == 0x09) && !is_plax_string) i++;
-        //no_params = (name[i] == ']') ? true : false; // CHANGED
-        //if(name[i] == ']')    // EXCLUDED
-        //    break;
+    for(; i < sizename; i++){
 
         if(!is_sub_function){
             is_sub_function = (name[i] == '[');
@@ -721,10 +720,13 @@ string execFunction(string name){
                 ++i;
             }
             if(name[i] == '\''){
+                is_plax_string = true;
                 if(!is_plax_string)
                     ++i;
-                is_plax_string = true;
             }
+            while((name[i] == ' ' || name[i] == 0x09)
+                  && !is_plax_string)
+                    i++;
         }
 
         if(name[i] == '[')
@@ -732,14 +734,19 @@ string execFunction(string name){
         if(name[i] == ']')
             --bracket;
 
+        //cout << "CHAR : " << name[i] << endl;
+        //cout << "BRACKET : " << bracket << endl;
+        //system("PAUSE");
+
         //name[i] != '\'' &&
         if(name[i] != ',' && bracket != 0){
-            name_params << name[i];
+            if(!(is_plax_string && name[i] == '\''))
+                name_params << name[i];
         }else{
             // Processar parâmetros do meio
             string name_var = name_params.str();
-            cout << "PROCESSANDO: " << name_var << endl;
-            system("PAUSE");
+            //cout << "PROCESSANDO: " << name_var << endl;
+            //system("PAUSE");
 
             string typevar = "NO";
             if(!assembly["type_vars"][name_var].is_null())
@@ -835,18 +842,19 @@ string execFunction(string name){
                         push_params << "\tpush " << name_var;
                     }else{
                         push_params << execFunction(name_var);
+
                         is_sub_function = false;
 
-						cout << "PROCESSOU: " << name_var << endl;
-						cout << "PROCESSOU i: " << name[i] << endl;
-						cout << "SUB_FUNCTION: " << is_sub_function << endl;
-                        system("PAUSE");
-						
+						//cout << "PROCESSOU: " << name_var << endl;
+						//cout << "PROCESSOU i: " << name[i] << endl;
+						//cout << "SUB_FUNCTION: " << is_sub_function << endl;
+                        //system("PAUSE");
+
                         if(push_params.str() == "$!"){
                             cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                             return "$!";
                         }
-                   
+
 
                         reading_func = false;
 

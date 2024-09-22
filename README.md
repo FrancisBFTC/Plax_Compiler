@@ -8,7 +8,7 @@ Plax (**P**redefined **L**anguage of **A**utomated e**X**ecution) é uma linguag
   
 **Para compilar o projeto de compilador PLAX:**
  
- • Possuir o compilador **G++**
+ • Possuir o compilador **G++**<br>
  • Configurar no C++ a API **nlohmann/json** (Busque em um dos meus Forks)
     
 **Requisitos Gerais:**

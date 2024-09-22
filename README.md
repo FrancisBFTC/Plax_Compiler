@@ -1,4 +1,4 @@
-# Compilador Plax v0.2.4
+# Compilador Plax v0.2.8
 
 Plax (**P**redefined **L**anguage of **A**utomated e**X**ecution) é uma linguagem de programação compilada, multi-paradigma e dinâmica no intuito de ser flexível como JavaScript/Python e veloz como C/Assembly, a linguagem contém junções de paradigmas e diferentes sintaxes.
 
@@ -8,7 +8,8 @@ Plax (**P**redefined **L**anguage of **A**utomated e**X**ecution) é uma linguag
   
 **Para compilar o projeto de compilador PLAX:**
  
- • Possuir o compilador **G++**
+ • Possuir o compilador **G++**<br>
+ • Configurar no C++ a API **nlohmann/json** (Busque em um dos meus Forks)
     
 **Requisitos Gerais:**
       

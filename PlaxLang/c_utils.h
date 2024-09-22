@@ -62,21 +62,17 @@ bool isNumber(string str)
 }
 
 string replace_all(string s, string x, string y){
-	int pos = 0;
-    bool is_equal = false;
+	stringstream w;
 
     for(int i = 0; i < s.length(); i++){
-        pos = i;
         for(int j = 0; j < x.length(); j++)
-            is_equal = (s[i++] == x[j]) ? true : false;
+            w << s[i+j];
 
-        i = pos;
-
-        if(is_equal){
+        if(w.str() == x){
             s.replace(i, x.length(), y);
-            i = 0;
-            is_equal = false;
+            i = i + (y.length()-1);
         }
+		w.str("");
     }
 	return s;
 }

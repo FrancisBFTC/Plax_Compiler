@@ -189,11 +189,11 @@ int processOperationConst(string operation, int counter, int j){
                 case '-':
                     result = stoi(number1) - stoi(number2);
                     break;
-				case '%':
-                    result = stoi(number1) % stoi(number2);
-                    break;
                 case '^':
                     result = stoi(number1) ^ stoi(number2);
+                    break;
+                case '%':
+                    result = stoi(number1) % stoi(number2);
                     break;
                 case '&':
                     result = stoi(number1) & stoi(number2);

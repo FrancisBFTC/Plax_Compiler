@@ -1,0 +1,76 @@
+MAIN TOKENS
+
+-- KEYWORDS COMMANDS
+"use"    -> include function/all
+"of"     -> include file
+"func"   -> function 
+"return" -> returns 
+"import" -> importings/calls
+"intr"   -> interruptions
+"call"   -> call with registers
+"const"  -> constants
+"string" -> string conversion
+"int"    -> integer conversion
+"word"   -> word conversion
+"byte"   -> byte conversion
+"char"   -> char conversion
+"bool"   -> bool conversion
+"float"  -> float conversion
+"if"     -> conditional
+"else"   -> otherwise conditional
+"while"  -> repetition loop
+"for"    -> repetition loop
+
+-- KEYWORDS VALUES
+"true"   -> logic value 1
+"false"  -> logic value 0
+"yes"    -> logic value 1
+"no"     -> logic value 0
+"NaN"    -> null value
+"null"   -> null value
+
+-- PREFIX SYMBOLS
+"@" -> variable
+
+-- DELIMITER SYMBOLS
+"<<<" -> comment open 
+">>>" -> comment close
+"<"   -> file include open
+">"   -> file include close
+"["   -> functions call open
+"]"   -> functions call close
+"("   -> scope blocks open
+")"   -> scope blocks close
+"{"   -> struct/vectors open  (also query string)
+"}"   -> struct/vectors close (also query string)
+"'"   -> strings open/close
+","   -> separator parameters
+
+-- OPERATOR SYMBOLS
+":"  -> attributing
+"+"  -> add 
+"-"  -> sub 
+"\"  -> div
+"*"  -> mul
+"%"  -> mod
+"^"  -> xor 
+"&"  -> and 
+"|"  -> or 
+"~"  -> not/else
+"="  -> equal
+">"  -> is bigger than
+"<"  -> is less than
+">=" -> is bigger/equal
+"<=" -> is less/equal
+"<>" -> is different than
+
+-- SPECIAL SYMBOLS
+"!"  -> factorial
+"#"
+"$"
+"§"
+";"
+"ª"
+"°"
+"¨"
+

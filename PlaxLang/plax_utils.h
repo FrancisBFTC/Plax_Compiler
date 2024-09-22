@@ -123,8 +123,11 @@ string getString(char *line)
 	string lineStr = toString(line);
 
     lineStr = getstring(lineStr, ":", lineStr.length());
+	int i = 0;
+	for(; lineStr[i] == ' ' || lineStr[i] == 0x09; i++);
 
-    if(contains(line, "'")){
+	// contains(line, "'")
+    if(lineStr[i] == '\'' || lineStr[i] == '\"'){
         size_t pos = 0;
         int pos1 = 0;
         int pos2 = 0;
@@ -148,7 +151,8 @@ string getString(char *line)
 
         return lineStr.substr(pos1+1, pos2-pos1-1);
     }else{
-        return (lineStr.find("import") == -1) ?  spaceclear(lineStr) : lineStr;
+		bool toSpace = lineStr.find("import") == -1 && lineStr.find("[") == -1; 
+        return (toSpace) ? spaceclear(lineStr) : lineStr;
     }
 }
 
@@ -234,12 +238,14 @@ void StoreTypeVars(char *line)
 
                 is_constant = true;
             }else{
-                if(contains(line, "'"))
-                    assembly["type_vars"][var] = types[V_STRING];
-                else
-                    assembly["type_vars"][var] = types[V_INT];
-
-               // cout << "TYPE:" << assembly["type_vars"][var] << ", VAR: " << var << endl;
+				if(!contains(line, "[") && !contains(line, "]")){
+					if(contains(line, "'"))
+						assembly["type_vars"][var] = types[V_STRING];
+					else
+						assembly["type_vars"][var] = types[V_INT];
+				}else{
+					assembly["type_vars"][var] = "RETURN";
+				}
             }
         }
     }else{
@@ -688,6 +694,7 @@ bool process_import_command(string lineImport){
 string execFunction(string name){
     stringstream push_name;
     stringstream push_params;
+	stringstream push_call;
 
     int i = 0;
     bool is_variable = false;
@@ -700,19 +707,22 @@ string execFunction(string name){
     for(; name[i] != '['; i++) push_name << name[i];
     no_params = (name[++i] == ']');
 
+	//cout << "FUNCOES DISPONIVEIS : " << assembly["local_funcs"] << endl;
+	//cout << "FUNCAO ATUAL : '" << push_name.str() << "'" << endl;
+	//system("pause");
+	
     if(assembly["local_funcs"][push_name.str()].is_null())
         return "$!";
 
-    cout << "INICIO:" << name << endl;
-    system("PAUSE");
+    //cout << "INICIO: " << name << endl;
+    //cout << "FUNCTION NAME: " << push_name.str() << endl;
+    //cout << "NAME[I]: " << name[i] << endl;
+    //system("PAUSE");
 
     stringstream name_params;
-    for(; name[i] != ']' || is_sub_function; i++){
+    int sizename = (name[name.length()-1] == '\n') ? name.length()-1 : name.length();
 
-        while((name[i] == ' ' || name[i] == 0x09) && !is_plax_string) i++;
-        //no_params = (name[i] == ']') ? true : false; // CHANGED
-        //if(name[i] == ']')    // EXCLUDED
-        //    break;
+    for(; i < sizename; i++){
 
         if(!is_sub_function){
             is_sub_function = (name[i] == '[');
@@ -721,10 +731,13 @@ string execFunction(string name){
                 ++i;
             }
             if(name[i] == '\''){
+                is_plax_string = true;
                 if(!is_plax_string)
                     ++i;
-                is_plax_string = true;
             }
+            while((name[i] == ' ' || name[i] == 0x09)
+                  && !is_plax_string)
+                    i++;
         }
 
         if(name[i] == '[')
@@ -732,14 +745,20 @@ string execFunction(string name){
         if(name[i] == ']')
             --bracket;
 
+        //cout << "CHAR : " << name[i] << endl;
+        //cout << "BRACKET : " << bracket << endl;
+        //system("PAUSE");
+
         //name[i] != '\'' &&
         if(name[i] != ',' && bracket != 0){
-            name_params << name[i];
+            if(!(is_plax_string && name[i] == '\''))
+                name_params << name[i];
         }else{
+			if(!no_params){
             // Processar parâmetros do meio
             string name_var = name_params.str();
-            cout << "PROCESSANDO: " << name_var << endl;
-            system("PAUSE");
+            //cout << "PROCESSANDO: " << name_var << endl;
+            //system("PAUSE");
 
             string typevar = "NO";
             if(!assembly["type_vars"][name_var].is_null())
@@ -765,7 +784,6 @@ string execFunction(string name){
                     }
 
                 }else{
-                    system("pause");
                     if(!assembly["local_funcs"][func_name][name_var].is_null()){
                         string params = assembly["local_funcs"][func_name][name_var];
                         push_params << "\tpush " << params;
@@ -799,25 +817,133 @@ string execFunction(string name){
                 is_variable = false;
             }else{
                 if(is_plax_string){
+					
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					stringstream querystr;
+					stringstream strconv;
+					stringstream strconv2;
+					stringstream label_show;
+					stringstream copy_query;
+					int stack = 4;
+					int countst = 0;
+					if(name_var.find("{") != -1){
+						bool is_querystr = false;
+						assembly["text"][text_index++] = "\txor ebx, ebx";
+						copy_query << "\tmov edi, eax" << endl;
+
+						for(int j = 0; j < name_var.length(); j++){
+							if(name_var[j] == '{'){
+								j += 2;
+								is_querystr = true;
+							}
+							if(name_var[j] == '}'){
+								is_querystr = false;
+								strconv << "{@" << querystr.str() << "}";
+
+								stringstream staticstr;
+								staticstr << "__" << push_name.str() << "_st__" << data_index;
+								stringstream ebxconc;
+								if(countst == 0){
+									strconv2 << "'\n\t" << staticstr.str() << ".size equ $ - " << staticstr.str();
+									ebxconc << "\tadd ebx, " << staticstr.str() << ".size";
+									assembly["text"][text_index++] = ebxconc.str();
+									copy_query << "\tmov esi, " << staticstr.str() << endl;
+									copy_query << "\tmov ecx, " << staticstr.str() << ".size" << endl;
+								}else{
+									strconv2 << "'\n\t" << staticstr.str() << "_" << countst-1 << ".size equ $ - " << staticstr.str() << "_" << countst-1;
+									ebxconc << "\tadd ebx, " << staticstr.str() << "_" << countst-1 << ".size";
+									assembly["text"][text_index++] = ebxconc.str();
+									copy_query << "\tmov esi, " << staticstr.str() << "_" << countst-1 << endl;
+									copy_query << "\tmov ecx, " << staticstr.str() << "_" << countst-1 << ".size" << endl;
+								}
+
+								copy_query << "\trep movsb" << endl;
+
+								ebxconc.str("");
+								string typequery = assembly["type_vars"][querystr.str()];
+								if(typequery == "INT" || typequery == "CONST STRING" || typequery == "CONST INT"){
+									strconv2 << "\n\tdd " << querystr.str() << " \n\t" << staticstr.str() << "_" << countst << " db '";
+									ebxconc << "\tpush " << querystr.str() << endl;
+									ebxconc << "\tcall strlen" << endl;
+									ebxconc << "\tadd esp, 4" << endl;
+									ebxconc << "\tadd ebx, eax" << endl;
+									ebxconc << "\tmov [ebp + " << stack << "], eax";
+									assembly["text"][text_index++] = ebxconc.str();
+
+									copy_query << "\tmov esi, " << querystr.str() << endl;
+									copy_query << "\tmov ecx, [ebp + " << stack << "]" << endl;
+									copy_query << "\trep movsb" << endl;
+									stack += 4;
+								}else{
+									if(typequery == "STRING"){
+										strconv2 << "\n\tdd _" << querystr.str() << "_ \n\t" << staticstr.str() << "_" << countst << " db '";
+										ebxconc << "\tpush DWORD[_" << querystr.str() << "_]" << endl;
+										ebxconc << "\tcall strlen" << endl;
+										ebxconc << "\tadd esp, 4" << endl;
+										ebxconc << "\tadd ebx, eax" << endl;
+										ebxconc << "\tmov [ebp + " << stack << "], eax";
+										assembly["text"][text_index++] = ebxconc.str();
+
+										copy_query << "\tmov esi, DWORD[_" << querystr.str() << "_]" << endl;
+										copy_query << "\tmov ecx, [ebp + " << stack << "]" << endl;
+										copy_query << "\trep movsb" << endl;
+										stack += 4;
+									}
+								}
+
+								name_var.replace(name_var.find(strconv.str()), strconv.str().length(), strconv2.str());
+								strconv2.str("");
+								strconv.str("");
+								querystr.str("");
+								countst++;
+							}
+							if(is_querystr){
+								querystr << name_var[j];
+							}
+						}
+
+						stringstream lastaddr;
+						lastaddr << "__" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+						stringstream ebxlast;
+						ebxlast << "\tadd ebx, " << lastaddr.str() << ".size";
+						assembly["text"][text_index++] = ebxlast.str();
+
+						// apenas fora de uma função por enquanto
+						stringstream push_inst;
+						push_inst << "\tpush ebx ";
+						assembly["text"][text_index++] = push_inst.str();
+						assembly["text"][text_index++] = "\tcall malloc";
+						assembly["text"][text_index++] = "\tadd esp, 4";
+						label_show << "__" << push_name.str() << "_st__" << data_index << "_";
+						push_inst.str("");
+						push_inst << "\t" << label_show.str() << " resd 1";
+						assembly["bss"][bss++] = push_inst.str();
+						push_inst.str("");
+						push_inst << "\tmov [" << label_show.str() << "], eax";
+						assembly["text"][text_index++] = push_inst.str();
+					}
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					
+					
+					
                     stringstream var_conc;
+					bool contain_color = false;
+					stringstream color_inst;
+		
                     name_var = (name_var.find("\\n") != -1) ? replace_all(name_var, "\\n", "',13,10,'") : name_var;
                     name_var = (name_var.find("\\t") != -1) ? replace_all(name_var, "\\t", "',9,'") : name_var;
                     name_var = (name_var.find("\\v") != -1) ? replace_all(name_var, "\\v", "',11,'") : name_var;
+			
                     if(name_var.find("\\x") != -1){
+						contain_color = true;		// VARIÁVEL DE QUERY STRINGS/COLOR ADICIONADO
                         string strColor = name_var;
                         int index_start = strColor.find("\\x")+2;
                         strColor = strColor.substr(index_start, 2);
 
-                        stringstream color_inst;
                         color_inst << "\tpush 0x" << strColor << endl;
                         color_inst << "\tpush DWORD[_stdout_]" << endl;
                         color_inst << "\tcall SetConsoleTextAttribute" << endl;
                         color_inst << "\tadd esp, 8" << endl;
-
-                        if(!is_func)
-                            assembly["text"][text_index++] = color_inst.str();
-                        else
-                            assembly["text_funcs"][text_funcs++] = color_inst.str();
 
                         stringstream colorconc;
                         colorconc << "\\x" << strColor;
@@ -826,24 +952,64 @@ string execFunction(string name){
                     }
 
                     var_conc << "\t__" << push_name.str() << "_st__" << data_index << " db '" << name_var << "',0";
-                    assembly["data"][data_index++] = var_conc.str();
+			
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					if(countst > 0){
+						stringstream lastaddr;
+						lastaddr << "__" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+						var_conc << "\n\t" << lastaddr.str() << ".size equ $ - __" << push_name.str() << "_st__" << data_index << "_" << countst-1;
+						copy_query << "\tmov esi, " << lastaddr.str() << endl;
+						copy_query << "\tmov ecx, " << lastaddr.str() << ".size" << endl;
+						copy_query << "\trep movsb" << endl;
+						assembly["text"][text_index++] = copy_query.str();
+						push_params << "\tpush DWORD[" << label_show.str() << "]";
+					}else{
+						push_params << "\tpush __" << push_name.str() << "_st__" << data_index;
+					}
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+				
+                    assembly["data"][data_index] = var_conc.str();
+					//cout << "CODIGO: " << var_conc.str() << endl;
+					//cout << "DATA_INDEX : " << data_index << endl;
+					//cout << "ASSEMBLY DATA: " << assembly["data"][data_index] << endl;
                     var_conc.str("");
-                    push_params << "\tpush __" << push_name.str() << "_st__" << data_index-1;
-
+					
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					if(contain_color){
+						if(!is_func)
+							assembly["text"][text_index++] = color_inst.str();
+						else
+							assembly["text_funcs"][text_funcs++] = color_inst.str();
+					}
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+				
+					// COMENTAR NOVAMENTE CASO EXCLUIR O CÓDIGO DE QUERY STRINGS
+                    //push_params << "\tpush __" << push_name.str() << "_st__" << data_index;
+					
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					//assembly["pushes_call2"][pushes2++] = push_params.str();
+					// CÓDIGO DE QUERY STRINGS ADICIONADO -----------------------------------------------------------------------------------
+					
+					++data_index;
                     is_plax_string = false;
                 }else{
                     if(isNumber(name_var)){
                         push_params << "\tpush " << name_var;
                     }else{
                         push_params << execFunction(name_var);
+
                         is_sub_function = false;
+
+						//cout << "PROCESSOU: " << name_var << endl;
+						//cout << "PROCESSOU i: " << name[i] << endl;
+						//cout << "SUB_FUNCTION: " << is_sub_function << endl;
+                        //system("PAUSE");
 
                         if(push_params.str() == "$!"){
                             cout << "A funcao '" << name_var << "' nao foi declarada!" << endl;
                             return "$!";
                         }
-                        cout << "PROCESSOU: " << name_var << endl;
-                        system("PAUSE");
+
 
                         reading_func = false;
 
@@ -852,17 +1018,22 @@ string execFunction(string name){
 
                 }
             }
-
-            assembly["pushes_call2"][pushes2++] = push_params.str();
+		
+			}else{
+				push_call << "\tcall " << push_name.str() << endl;
+			}
+			
+			assembly["pushes_call2"][pushes2++] = push_params.str();
             name_params.str("");
             push_params.str("");
-
         }
 
     }
 
-    stringstream push_call;
 
+	//if(no_params)
+	//	 push_call << "\tcall " << push_name.str() << endl;
+	 
     /*
     if(no_params){
         push_call << "\tcall " << push_name.str() << endl;
@@ -1105,17 +1276,19 @@ string execFunction(string name){
     name_params.str("");
     push_params.str("");
 
-    push_params << "\tcall " << push_name.str();
-    push_call << endl;
+	if(!no_params){
+		push_params << "\tcall " << push_name.str();
+		push_call << endl;
 
-    for(int x = assembly["pushes_call2"].size()-1; x >= 0 ; x--){
-        string push_call_str = assembly["pushes_call2"][x];
-        push_call << push_call_str << endl;
-        if(x == 0){
-            push_call << push_params.str() << endl;
-            push_call << "\tadd esp, " << assembly["pushes_call2"].size() * 4 << endl;
-        }
-    }
+		for(int x = assembly["pushes_call2"].size()-1; x >= 0 ; x--){
+			string push_call_str = assembly["pushes_call2"][x];
+			push_call << push_call_str << endl;
+			if(x == 0){
+				push_call << push_params.str() << endl;
+				push_call << "\tadd esp, " << assembly["pushes_call2"].size() * 4 << endl;
+			}
+		}	
+	}
 
     assembly["pushes_call2"].clear();
     pushes2 = 0;
@@ -1159,157 +1332,185 @@ bool Interpret_Commands(FILE *file){
     return true;
 }
 
-bool process_variables_attrib(char *line){
+bool process_variables_attrib(char *line){ // begin function
 
-        bool attrib = toString(line).find("@") < toString(line).find(":");
+    bool attrib = toString(line).find("@") < toString(line).find(":");
 
-        if(contains(line, "@") && contains(line, ":") && attrib && !contains(line, "local") && !contains(line, "func") && !is_comment){
+	// SE É UMA VARIÁVEL
+    if(contains(line, "@") && contains(line, ":") && attrib && !contains(line, "local") && !contains(line, "func") && !is_comment){ // begin if 1
+			
+        str = getString(line); 
+        var = getVariable(line);
+        StoreTypeVars(line);
+		//cout << "ATTRIB: " << var << " = " << str << " -> " << assembly["type_vars"][var] << endl;
+		//system("pause");
 
-            str = getString(line);
-            var = getVariable(line);
-            StoreTypeVars(line);
+        bool exist_var = (!assembly["vars"][var].is_null()) ? true : false;
+        if(!is_func)
+            assembly["vars"][var] = str.c_str();
 
+        parsingVariables(line);
 
-            bool exist_var = (!assembly["vars"][var].is_null()) ? true : false;
-            if(!is_func)
-                assembly["vars"][var] = str.c_str();
+		// SE É UMA VARIÁVEL CONSTANTE
+        if(is_constant){
+			// SE É UMA VARIÁVEL CONSTANTE INTEIRA
+            if(isNumber(str) && assembly["type_vars"][var] == "INT"){
+                if(!assembly["type_vars"][var].is_null())
+                    type = assembly["type_vars"][var];
 
-            parsingVariables(line);
+                stringstream var_conc;
+				// SE NÃO ESTÁ DENTRO DE UMA FUNÇÃO
+                if(!is_func){
+                    var_conc << "\t" << var << " dd " << str;
+                    assembly["rodata"][rodata_index++] = var_conc.str();
+                }else{	// SE ESTÁ DENTRO DE UMA FUNÇÃO
+						
+					// SE A VARIÁVEL DE PARÂMETRO DA FUNÇÃO EXISTE
+                    if(!assembly["local_funcs"][func_name][var].is_null()){
+                        string param = assembly["local_funcs"][func_name][var];
+                        var_conc << "\tmov " << param << ", " << str;
+                    }else{ // SE O PARÂMETRO DA FUNÇÃO NÃO EXISTE
+							
+						// SE A VARIÁVEL GLOBAL NÃO EXISTE
+                        if(assembly["vars"][var].is_null()){
+                            local_offsets += 4;
+                            stringstream stacklocal;
+                            stacklocal << "DWORD[ebp - " << local_offsets << "]";
+                            var_conc << "\tmov " << stacklocal.str() << ", " << str;
+                            assembly["local_names"][func_name][var] = stacklocal.str();
+                        }else{ // SE A VARIÁVEL GLOBAL EXISTE
+                            var_conc << "\tmov DWORD[" << var << "], " << str;
+                        }
+                    } // SE ESTÁ DENTRO DE UMA FUNÇÃO
+                    assembly["text_funcs"][text_funcs++] = var_conc.str();
+                }
+				
+			// SE NÃO É UMA VARIÁVEL CONSTANTE INTEIRA
+            }else{
+                if(!assembly["type_vars"][var].is_null())
+                    type = assembly["type_vars"][var];
+				
+                stringstream var_conc;
 
-            if(is_constant){
-                if(isNumber(str) && assembly["type_vars"][var] == "INT"){
+                bool is_plax_bool = false;
+
+				// SE FOR DO TIPO BOOLEANO CONSTANTE
+                if(type == "CONST BOOL"){
+                    is_plax_bool = true;
+                    if(str == "true")
+                        var_conc << "\t" << var << " db 1";
+                    else
+                        var_conc << "\t" << var << " db 0";
+				// SE NÃO FOR BOOLEANO CONSTANTE
+                }else{
+                    str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
+                    str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
+                    str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+					
+					// SE É UM CÓDIGO DE CORES PARA STRINGS
+                    if(str.find("\\x") != -1){
+                        string strColor = str;
+                        int index_start = strColor.find("\\x")+2;
+                        strColor = strColor.substr(index_start, 2);
+
+                        stringstream color_inst;
+                        color_inst << "\tpush 0x" << strColor << endl;
+                        color_inst << "\tpush DWORD[_stdout_]" << endl;
+                        color_inst << "\tcall SetConsoleTextAttribute" << endl;
+                        color_inst << "\tadd esp, 8" << endl;
+
+                        if(!is_func)
+                            assembly["text"][text_index++] = color_inst.str();
+                        else
+                            assembly["text_funcs"][text_funcs++] = color_inst.str();
+
+                        stringstream colorconc;
+                        colorconc << "\\x" << strColor;
+                        string colorStr = colorconc.str();
+                        str = replace_all(str, colorStr, "");
+                    } // SE É UM CÓDIGO DE CORES PARA STRINGS
+                    var_conc << "\t" << var << " db '" << str << "',0";
+                }
+
+                assembly["rodata"][rodata_index++] = var_conc.str();
+                var_conc.str("");
+
+                if(!is_plax_bool){
+                    var_conc << "\t" << var << ".size equ $ - " << var;
+                    assembly["rodata"][rodata_index++] = var_conc.str();
+                }
+            }
+
+		// SE NÃO É UMA CONSTANTE
+        }else{ 
+            stringstream var_conc;
+
+			// SE A VARIÁVEL NÃO EXISTE OU NÃO FOI ALOCADA
+            if(!exist_var){
+				// SE É UM NÚMERO (INTEIRO)
+                if(isNumber(str)){
                     if(!assembly["type_vars"][var].is_null())
                         type = assembly["type_vars"][var];
-                    //cout << type << ": " << str << ", VAR: @" << var << endl;
-                    stringstream var_conc;
+
+					// SE NÃO ESTÁ DENTRO DE UMA FUNÇÃO
                     if(!is_func){
                         var_conc << "\t" << var << " dd " << str;
-                        assembly["rodata"][rodata_index++] = var_conc.str();
-                    }else{
+                        assembly["data"][i++] = var_conc.str();
+                    }else{	// SE ESTÁ DENTRO DE UMA FUNÇÃO
+					
+						// SE A VARIÁVEL DE PARÂMETRO DA FUNÇÃO EXISTE
                         if(!assembly["local_funcs"][func_name][var].is_null()){
                             string param = assembly["local_funcs"][func_name][var];
                             var_conc << "\tmov " << param << ", " << str;
-                        }else{
-                            if(assembly["vars"][var].is_null()){
-                                local_offsets += 4;
-                                stringstream stacklocal;
-                                stacklocal << "DWORD[ebp - " << local_offsets << "]";
-                                var_conc << "\tmov " << stacklocal.str() << ", " << str;
-                                assembly["local_names"][func_name][var] = stacklocal.str();
-                            }else{
-                                var_conc << "\tmov DWORD[" << var << "], " << str;
-                            }
+                        }else{ // SE O PARÂMETRO DA FUNÇÃO NÃO EXISTE
+						
+							// SE A VARIÁVEL GLOBAL NÃO EXISTE
+                            local_offsets += 4;
+                            stringstream stacklocal;
+                            stacklocal << "DWORD[ebp - " << local_offsets << "]";
+                            var_conc << "\tmov " << stacklocal.str() << ", " << str;
+                            assembly["local_names"][func_name][var] = stacklocal.str();
                         }
                         assembly["text_funcs"][text_funcs++] = var_conc.str();
                     }
+
+				// SE NÃO É UM NÚMERO
                 }else{
                     if(!assembly["type_vars"][var].is_null())
                         type = assembly["type_vars"][var];
-                    //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
-                    stringstream var_conc;
 
-                    bool is_plax_bool = false;
+					// SE FOR UMA IMPORTAÇÃO EXTERNA
+                    if(str.find("import") != -1){
+                        stringstream strbreak;
+                        strbreak << str << "\n";
+                        bool success = process_import_command(strbreak.str());    //strbreak.str()
+                        if(!success)
+                            return false;
 
-                    if(type == "CONST BOOL"){
-                        is_plax_bool = true;
-                        if(str == "true")
-                            var_conc << "\t" << var << " db 1";
+                        var_conc << "\t_" << var << "_" << " resd 1 ";
+                        assembly["bss"][bss++] = var_conc.str();
+                        var_conc.str("");
+                        var_conc << "\tmov DWORD[_" << var << "_], eax";
+
+                        if(!is_func)
+                            assembly["text"][text_index++] = var_conc.str();
                         else
-                            var_conc << "\t" << var << " db 0";
-                    }else{
-                        str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
-                        str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
-                        str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
-                        if(str.find("\\x") != -1){
-                            string strColor = str;
-                            int index_start = strColor.find("\\x")+2;
-                            strColor = strColor.substr(index_start, 2);
-
-                            stringstream color_inst;
-                            color_inst << "\tpush 0x" << strColor << endl;
-                            color_inst << "\tpush DWORD[_stdout_]" << endl;
-                            color_inst << "\tcall SetConsoleTextAttribute" << endl;
-                            color_inst << "\tadd esp, 8" << endl;
-
-                            if(!is_func)
-                                assembly["text"][text_index++] = color_inst.str();
-                            else
-                                assembly["text_funcs"][text_funcs++] = color_inst.str();
-
-                            stringstream colorconc;
-                            colorconc << "\\x" << strColor;
-                            string colorStr = colorconc.str();
-                            str = replace_all(str, colorStr, "");
-                        }
-                        var_conc << "\t" << var << " db '" << str << "',0";
-                    }
-
-                    assembly["rodata"][rodata_index++] = var_conc.str();
-                    var_conc.str("");
-
-                    if(!is_plax_bool){
-                        var_conc << "\t" << var << ".size equ $ - " << var;
-                        assembly["rodata"][rodata_index++] = var_conc.str();
-                    }
-                }
-
-            }else{
-                stringstream var_conc;
-
-                if(!exist_var){
-                    if(isNumber(str)){
-                        if(!assembly["type_vars"][var].is_null())
-                                type = assembly["type_vars"][var];
-
-                            //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
-                        if(!is_func){
-                            var_conc << "\t" << var << " dd " << str;
-                            assembly["data"][i++] = var_conc.str();
-                        }else{
-                            if(!assembly["local_funcs"][func_name][var].is_null()){
-                                string param = assembly["local_funcs"][func_name][var];
-                                var_conc << "\tmov " << param << ", " << str;
-                            }else{
-                                local_offsets += 4;
-                                stringstream stacklocal;
-                                stacklocal << "DWORD[ebp - " << local_offsets << "]";
-                                var_conc << "\tmov " << stacklocal.str() << ", " << str;
-                                assembly["local_names"][func_name][var] = stacklocal.str();
-                            }
                             assembly["text_funcs"][text_funcs++] = var_conc.str();
-                        }
 
+                        assembly["realloc"][var] = false;
+							
+					// SE NÃO FOR UMA IMPORTAÇÃO EXTERNA
                     }else{
-                        if(!assembly["type_vars"][var].is_null())
-                                type = assembly["type_vars"][var];
-
-                            //cout << type << ": " << "\"" << str << "\", VAR: @" << var << endl;
-
-                        if(str.find("import") != -1){
-                            stringstream strbreak;
-                            strbreak << str << "\n";
-                            bool success = process_import_command(strbreak.str());    //strbreak.str()
-                            if(!success)
-                                return false;
-
-                            var_conc << "\t_" << var << "_" << " resd 1 ";
-                            assembly["bss"][bss++] = var_conc.str();
-                            var_conc.str("");
-                            var_conc << "\tmov DWORD[_" << var << "_], eax";
-
-                            if(!is_func)
-                                assembly["text"][text_index++] = var_conc.str();
-                            else
-                                assembly["text_funcs"][text_funcs++] = var_conc.str();
-
-                            assembly["realloc"][var] = false;
-                        }else{
-                            if(str == "NULL")
+						// SE NÃO FOR UMA FUNÇÃO
+                        if(str.find("[") == -1 && str.find("]") == -1){
+                            if(str == "NULL")	// SE É NULL
                                 var_conc << "\t" << var << " db 0";
                             else{
                                 str = (str.find("\\n") != -1) ? replace_all(str, "\\n", "',13,10,'") : str;
                                 str = (str.find("\\t") != -1) ? replace_all(str, "\\t", "',9,'") : str;
                                 str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
+								
+								// SE CONTÉM CÓDIGO PARA CORES DE STRINGS
                                 if(str.find("\\x") != -1){
                                     string strColor = str;
                                     int index_start = strColor.find("\\x")+2;
@@ -1330,20 +1531,54 @@ bool process_variables_attrib(char *line){
                                     colorconc << "\\x" << strColor;
                                     string colorStr = colorconc.str();
                                     str = replace_all(str, colorStr, "");
-                                }
+                                }	// SE CONTÉM CÓDIGO PARA CORES DE STRINGS
+								
                                 var_conc << "\t" << var << " db '" << str << "',0";
+                            } // SE NÃO É NULL
+
+                                assembly["data"][i] = var_conc.str();
+                                var_conc.str("");
+								
+						// SE FOR UMA FUNÇÃO
+                        }else{
+							//cout << "EXECUTANDO : " << str << endl;
+							//system("pause");
+							
+                            var_conc << execFunction(str);
+							
+							//cout << "EXECUTOU : " << str << endl;
+							//system("pause");
+							
+                            if(var_conc.str() == "$!"){
+                                cout << "A funcao '" << str << "' nao foi declarada!" << endl;
+                                return false;
                             }
-                            assembly["data"][i] = var_conc.str();
+							
+							//cout << "PASSOU : " << str << endl;
+							//system("pause");
+                            if(var_conc.str() == "$$"){
+                                cout << "Error: Erro ao executar a funcao!" << endl;
+                                return false;
+                            }
+                            var_conc << "\tmov DWORD[_" << var << "_], eax";
+                            if(!is_func)
+                                assembly["text"][text_index++] = var_conc.str();
+                            else
+                                assembly["text_funcs"][text_funcs++] = var_conc.str();
 
                             var_conc.str("");
+                        } // SE FOR UMA FUNÇÃO
 
-                            var_conc << "\t_" << var << "_" << " resd 1 ";
-                            assembly["bss"][bss++] = var_conc.str();
-                            assembly["realloc"][var] = false;
-                        }
-                    }
-                }else{
+                        var_conc << "\t_" << var << "_" << " resd 1 ";
+                        assembly["bss"][bss++] = var_conc.str();
+                        assembly["realloc"][var] = false;
+                    } // SE NÃO FOR UMA IMPORTAÇÃO EXTERNA
+                } // SE NÃO É UM NÚMERO
+					
+			// SE EXISTE VARIÁVEL
+            }else{
 
+					// SE A VARIÁVEL EXISTENTE FOR UM NÚMERO INTEIRO 
                     if(isNumber(str) && assembly["type_vars"][var] == "INT"){
                         if(!assembly["type_vars"][var].is_null())
                                 type = assembly["type_vars"][var];
@@ -1368,6 +1603,8 @@ bool process_variables_attrib(char *line){
                             }
                             assembly["text_funcs"][text_funcs++] = var_conc.str();
                         }
+						
+					// SE A VARIÁVEL EXISTENTE NÃO FOR UM NÚMERO INTEIRO
                     }else{
                         if(!assembly["type_vars"][var].is_null())
                                 type = assembly["type_vars"][var];
@@ -1377,13 +1614,15 @@ bool process_variables_attrib(char *line){
                         var_conc << "_" << var << "_";
 
                         stringstream push_inst;
+						
+						// SE NÃO ESTÁ DENTRO DE UMA FUNÇÃO
                         if(!is_func){
-                            if(!assembly["realloc"][var]){
+                            if(!assembly["realloc"][var]){ // SE VARIÁVEL NÃO FOI ALOCADA
                                 push_inst << "\tpush " << var << "__" << i << ".size";
                                 assembly["text"][text_index++] = push_inst.str();
                                 assembly["text"][text_index++] = "\tcall malloc";
                                 assembly["text"][text_index++] = "\tadd esp, 4";
-                            }else{
+                            }else{	// SE A VARIÁVEL JÁ FOI ALOCADA
                                 push_inst << "\tpush " << var << "__" << i << ".size";
                                 assembly["text"][text_index++] = push_inst.str();
                                 push_inst.str("");
@@ -1391,7 +1630,7 @@ bool process_variables_attrib(char *line){
                                 assembly["text"][text_index++] = push_inst.str();
                                 assembly["text"][text_index++] = "\tcall realloc";
                                 assembly["text"][text_index++] = "\tadd esp, 8";
-                            }
+                            } // SE A VARIÁVEL JÁ FOI ALOCADA
 
                             stringstream addr_inst;
                             addr_inst << "\tmov [" << var_conc.str() << "], eax";
@@ -1403,7 +1642,8 @@ bool process_variables_attrib(char *line){
                             stringstream color_inst;
                             bool has_color = false;
 
-                             if(str.find("\\x") != -1){
+							// SE CONTÉM CÓDIGO PARA CORES DE STRINGS 
+                            if(str.find("\\x") != -1){
                                 string strColor = str;
                                 int index_start = strColor.find("\\x")+2;
                                 strColor = strColor.substr(index_start, 2);
@@ -1419,39 +1659,44 @@ bool process_variables_attrib(char *line){
                                 str = replace_all(str, colorStr, "");
 
                                 has_color = true;
-                            }
-                            var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
-
+                            } // SE CONTÉM CÓDIGO PARA CORES DE STRINGS
+							
+							//cout << "DATA INDEX NO VARIABLE : " << data_index << endl;
+							//system("pause");
+							//i = data_index;
+                            var_conc << "\t" << var << "__" << i << " db '" << str << "',0" << "\n"
+									 << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
                             assembly["data"][i] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
-                            assembly["data"][++i] = var_conc.str();
-                            var_conc.str("");
-
-                            var_conc << "\tmov esi, " << var << "__" << i-1;
+                            var_conc << "\tmov esi, " << var << "__" << i;
                             assembly["text"][text_index++] = addr_inst.str();
                             assembly["text"][text_index++] = "\tmov edi, eax";
                             assembly["text"][text_index++] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
+                            var_conc << "\tmov ecx, " << var << "__" << i << ".size";
                             assembly["text"][text_index++] = var_conc.str();
                             assembly["text"][text_index++] = "\trep movsb";
 
+							++i;
+							data_index = i;
+							
                             if(has_color){
                                 if(!is_func)
                                     assembly["text"][text_index++] = color_inst.str();
                                 else
                                     assembly["text_funcs"][text_funcs++] = color_inst.str();
                             }
+							
+						// SE ESTÁ DENTRO DE UMA FUNÇÃO
                         }else{
-                            if(!assembly["realloc"][var]){
+                            if(!assembly["realloc"][var]){ // SE A VARIÁVEL NÃO FOI ALOCADA
                                 push_inst << "\tpush " << var << "__" << i << ".size";
                                 assembly["text_funcs"][text_funcs++] = push_inst.str();
                                 assembly["text_funcs"][text_funcs++] = "\tcall malloc";
                                 assembly["text_funcs"][text_funcs++] = "\tadd esp, 4";
-                            }else{
+                            }else{	// SE A VARIÁVEL JÁ FOI ALOCADA
                                 push_inst << "\tpush " << var << "__" << i << ".size";
                                 assembly["text_funcs"][text_funcs++] = push_inst.str();
                                 push_inst.str("");
@@ -1469,6 +1714,7 @@ bool process_variables_attrib(char *line){
                             str = (str.find("\\v") != -1) ? replace_all(str, "\\v", "',11,'") : str;
                             stringstream color_inst;
                             bool has_color = false;
+							// SE CONTÉM CÓDIGO PARA CORES DE STRINGS
                             if(str.find("\\x") != -1){
                                 string strColor = str;
                                 int index_start = strColor.find("\\x")+2;
@@ -1485,25 +1731,26 @@ bool process_variables_attrib(char *line){
                                 str = replace_all(str, colorStr, "");
 
                                 has_color = true;
-                            }
-                            var_conc << "\t" << var << "__" << i << " db '" << str << "',0";
-
+                            } // SE CONTÉM CÓDIGO PARA CORES DE STRINGS
+							
+							//i = data_index;
+                            var_conc << "\t" << var << "__" << i << " db '" << str << "',0" << "\n"
+									 << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
                             assembly["data"][i] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << "\t" << var << "__" << i << ".size equ $ - " << var << "__" << i;
-                            assembly["data"][++i] = var_conc.str();
-                            var_conc.str("");
-
-                            var_conc << "\tmov esi, " << var << "__" << i-1;
+                            var_conc << "\tmov esi, " << var << "__" << i;
                             assembly["text_funcs"][text_funcs++] = addr_inst.str();
                             assembly["text_funcs"][text_funcs++] = "\tmov edi, eax";
                             assembly["text_funcs"][text_funcs++] = var_conc.str();
                             var_conc.str("");
 
-                            var_conc << "\tmov ecx, " << var << "__" << i-1 << ".size";
+                            var_conc << "\tmov ecx, " << var << "__" << i << ".size";
                             assembly["text_funcs"][text_funcs++] = var_conc.str();
                             assembly["text_funcs"][text_funcs++] = "\trep movsb";
+							
+							++i;
+							data_index = i;
 
                             if(has_color){
                                 if(!is_func)
@@ -1511,20 +1758,24 @@ bool process_variables_attrib(char *line){
                                 else
                                     assembly["text_funcs"][text_funcs++] = color_inst.str();
                             }
-                        }
+							
+							
+                        } // SE ESTÁ DENTRO DE UMA FUNÇÃO
 
-                        i++;
+                        //i++;
 
                         assembly["realloc"][var] = true;
-                    }
-                }
-            }
+                    } // SE A VARIÁVEL EXISTENTE NÃO FOR UM NÚMERO INTEIRO
+					
+					
+			} // SE EXISTE VARIÁVEL
+		
+		} // SE NÃO É UMA CONSTANTE
+				
+    } // SE É UMA VARIÁVEL
 
-            data_index = i;
-        }
-
-    return true;
-}
+	return true;
+} // FIM DA FUNÇÃO
 
 // Comando de declaração de funções
 bool process_func_command(char *line){
@@ -1620,7 +1871,9 @@ void process_function_params(char *line){
                     break;
             }
         }
-    }
+    }else{
+		assembly["local_funcs"][func_name][""] = "";
+	}
 }
 
 // Comando de retorno de funções
@@ -1683,7 +1936,8 @@ bool process_return_command(char *line){
 
 // Executa funções chamadas no PLAX
 bool process_functions_call(char *line){
-    if(contains(line, "[") && !contains(line, "import") && !contains(line, "const") && !is_comment){
+    if(contains(line, "[") && !contains(line, "import") && !contains(line, "const") 
+		&& !contains(line, ":") && !is_comment){
         stringstream getcode;
         reading_func = true;
         getcode << execFunction(toString(line));

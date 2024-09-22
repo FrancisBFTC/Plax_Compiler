@@ -1,0 +1,28 @@
+use * of <../Modules/io_sys>
+use * of <../Modules/shell>
+use * of <data>
+
+@Language 	: 'Plax'
+@Author 	: 'Wender'
+
+func getLanguage (
+	return @Language
+)
+
+func getAuthor (
+	return @Author
+)
+
+@lang : getLanguage[]
+@auth : getAuthor[]
+
+func PrintData @info(
+	Show[@info]
+	Show['\x02Linguagem = {@lang}\n']
+	Show['\x03Autor = {@auth}\n']
+	ScreenColor[15]
+	Command['pause']
+)
+
+PrintData['***** INFORMACOES *****\n']
+

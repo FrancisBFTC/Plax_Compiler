@@ -47,6 +47,8 @@ int pushes2 = 0;
 int i = 0;
 int bss = 0;
 int index_symbol = 0;
+int line_index = 0;
+int line_number = 1;
 // ----------------------------------------
 
 
@@ -62,7 +64,8 @@ bool is_constant = false;
 
 // Declarações de Protótipos
 // ----------------------------------------
-int get_token(string);
+int get_token_type(string);
+int debug_type_token(int);
 
 string getString(char*);
 string getstring(string, string, int);
@@ -83,19 +86,30 @@ void StoreTypeVars(char*);
 void parsingVariables(char*);
 void setTypeVars(string, int, int, int);
 void parsingConstant(char*);
+
 // ----------------------------------------
 
 // Estruturas e Arrays
 // ----------------------------------------
+#define OPERATORS_SIZE 	17
 const char* operators[] = {
     "*",
     "/",
     "+",
     "-",
+	"%",
+	"=",
+	">",
+	">=",
+	"<",
+	"<=",
+	"<>",
+	"~",
     "^",
-    "%",
     "&",
-    "|"
+    "|",
+	":",
+	"->"
 };
 
 const char* types[] = {
@@ -106,9 +120,24 @@ const char* types[] = {
     "FLOAT",
     "INT",
     "STRING",
-    "BOOL"
+    "BOOL",
+	"FUNCTION"
 };
 
+const char* tokentypes[] = {
+	"UNKNOWN",
+	"COMMAND",
+	"VALUES",
+	"PREFIX",
+	"DELIMITER",
+	"OPERATOR",
+	"SPECIAL",
+	"ENDLINE"
+};
+// ----------------------------------------
+
+// Enumerators
+// ----------------------------------------
 enum TYPE_OF_VARS {
   CONST_FLOAT = 0,
   CONST_INT,
@@ -117,7 +146,19 @@ enum TYPE_OF_VARS {
   V_FLOAT,
   V_INT,
   V_STRING,
-  V_BOOL
+  V_BOOL,
+  FUNCTION
+};
+
+enum TYPE_TOKEN {
+	UNKNOWN = -1,
+	COMMAND = 0,
+	VALUES,
+	PREFIX,
+	DELIMITER,
+	OPERATOR,
+	SPECIAL,
+	ENDLINE
 };
 // ----------------------------------------
 
@@ -192,6 +233,27 @@ int processOperationConst(string operation, int counter, int j){
 				case '%':
                     result = stoi(number1) % stoi(number2);
                     break;
+				case '=':
+					result = stoi(number1) == stoi(number2);
+					break;
+				case '>':
+					if(operation[1] == '=')
+						result = stoi(number1) >= stoi(number2);
+					else	
+						result = stoi(number1) > stoi(number2);
+					break;
+				case '<':
+					if(operation[1] == '=')
+						result = stoi(number1) <= stoi(number2);
+					else 
+						if(operation[1] == '>')	
+							result = stoi(number1) != stoi(number2);
+						else
+							result = stoi(number1) < stoi(number2);
+					break;
+				case '~':
+					result = stoi(number1) * !stoi(number2);
+					break;
                 case '^':
                     result = stoi(number1) ^ stoi(number2);
                     break;
@@ -343,7 +405,7 @@ void parsingConstant(char *line){
                         assembly["operations"][0][count_op++] = value.c_str();
                         int j;
 
-                        for(int i = 0; i < 8; i++)
+                        for(int i = 0; i < 15; i++)
                             counter = processOperationConst(operators[i], counter, j);
 
                         if(variable){
@@ -1304,6 +1366,13 @@ bool Interpret_Commands(FILE *file){
     char line[1024];
     while((fgets(line, sizeof(line), file)) != NULL){
 
+		int token = 0;
+		while(token != ENDLINE){
+			token = debug_type_token(get_token_type(toString(line)));
+			line_index++;
+			if(token == ENDLINE){ line_index = 0; line_number++; }
+		}
+		/*
         // IGNORADOR DE COMENTÁRIOS (MACRO)
         ignore_comments(line, file)
 
@@ -1330,16 +1399,38 @@ bool Interpret_Commands(FILE *file){
         // LEXER DE USO DA LIB PLAX
         if(!process_use_command(line))
             return false;
-
+		*/
     }
 
     return true;
 }
 
-int get_token(string line){
-	// Eskipar primeiros espaços e tabulações
-	for(int i = 0; line[i] == ' ' || line[i] == 0x09; i++);
+int get_token_type(string line){
 	
+	int x = line_index;
+	
+	// Eskipar primeiros espaços e tabulações
+	for(; line[x] == ' ' || line[x] == 0x09; x++);
+	line_index = x;
+	
+	// Primeiro verifica se é fim de linha ou arquivo
+	if(line[x] == '\n' || line[x] == 0 || line[x] == EOF)
+		return ENDLINE;
+	
+	// Verifica o token 'operador'
+	for(int i = 0; i < OPERATORS_SIZE; i++)
+		if(line.substr(x, strlen(operators[i])) == operators[i])
+			return OPERATOR;
+	
+	return UNKNOWN;
+}
+
+int debug_type_token(int type_token){
+	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
+	cout << "POSITION    : " << line_index << endl;
+	cout << "LINE NUMBER : " << line_number << endl;
+	system("pause");
+	return type_token;
 }
 
 bool process_variables_attrib(char *line){ // begin function

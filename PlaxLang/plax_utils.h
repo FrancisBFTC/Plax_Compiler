@@ -66,6 +66,8 @@ bool is_constant = false;
 // ----------------------------------------
 int get_token_type(string);
 int debug_type_token(int);
+string get_token();
+int iterate_token(string, int, int, const char*[]);
 
 string getString(char*);
 string getstring(string, string, int);
@@ -91,7 +93,7 @@ void parsingConstant(char*);
 
 // Estruturas e Arrays
 // ----------------------------------------
-#define OPERATORS_SIZE 	17
+#define OPERATORS_SIZE 	19
 const char* operators[] = {
     "*",
     "/",
@@ -108,8 +110,83 @@ const char* operators[] = {
     "^",
     "&",
     "|",
+	"?",
+	"??",
 	":",
 	"->"
+};
+
+#define PREFIX_SIZE 2
+const char* prefix[] = {
+	"@",
+	"$"
+};
+
+#define DELIMITER_SIZE 13
+const char* delimiter[] = {
+	"<<<",
+	">>>",
+	"<",
+	">",
+	"[",
+	"]",
+	"(",
+	")",
+	"{",
+	"}",
+	"'",
+	",",
+	"."
+};
+
+#define SPECIAL_SIZE 5
+const char* special[] = {
+	"!",
+	"#",
+	"§",
+	";",
+	"¨"
+};
+
+#define ESCAPE_SIZE 4
+const char* escape[] = {
+	"\\n",
+	"\\t",
+	"\\v",
+	"\\x"
+};
+
+#define COMMAND_SIZE 19
+const char* command[] = {
+	"use",
+	"of",
+	"func",
+	"return",
+	"import",
+	"intr",
+	"call",
+	"const",
+	"string",
+	"int",
+	"word",
+	"byte",
+	"char",
+	"bool",
+	"float",
+	"if",
+	"else",
+	"while",
+	"for"
+};
+
+#define VALUES_SIZE 6
+const char* values[] = {
+	"true",
+	"false",
+	"yes",
+	"no",
+	"NaN",
+	"null"
 };
 
 const char* types[] = {
@@ -132,8 +209,10 @@ const char* tokentypes[] = {
 	"DELIMITER",
 	"OPERATOR",
 	"SPECIAL",
+	"ESCAPE",
 	"ENDLINE"
 };
+
 // ----------------------------------------
 
 // Enumerators
@@ -151,14 +230,32 @@ enum TYPE_OF_VARS {
 };
 
 enum TYPE_TOKEN {
-	UNKNOWN = -1,
-	COMMAND = 0,
+	UNKNOWN = 0,
+	COMMAND,
 	VALUES,
 	PREFIX,
 	DELIMITER,
 	OPERATOR,
 	SPECIAL,
+	ESCAPE,
 	ENDLINE
+};
+
+const int tokensizes[] = {
+	PREFIX_SIZE,  DELIMITER_SIZE, OPERATORS_SIZE,
+	SPECIAL_SIZE, ESCAPE_SIZE, COMMAND_SIZE,
+	VALUES_SIZE
+};
+
+const int tokentype[] = {
+	PREFIX, DELIMITER, OPERATOR,
+	SPECIAL, ESCAPE, COMMAND, VALUES
+};
+
+#define TOKENPOINTER_SIZE 7
+const char** tokenpointer[] = {
+	prefix, delimiter, operators,
+	special, escape, command, values
 };
 // ----------------------------------------
 
@@ -1408,7 +1505,7 @@ bool Interpret_Commands(FILE *file){
 int get_token_type(string line){
 	
 	int x = line_index;
-	
+
 	// Eskipar primeiros espaços e tabulações
 	for(; line[x] == ' ' || line[x] == 0x09; x++);
 	line_index = x;
@@ -1417,20 +1514,35 @@ int get_token_type(string line){
 	if(line[x] == '\n' || line[x] == 0 || line[x] == EOF)
 		return ENDLINE;
 	
-	// Verifica o token 'operador'
-	for(int i = 0; i < OPERATORS_SIZE; i++)
-		if(line.substr(x, strlen(operators[i])) == operators[i])
-			return OPERATOR;
+	// Itera pelos tipos de tokens
+	for(int i = 0; i < TOKENPOINTER_SIZE; i++){
+		int type = iterate_token(line, x, i, tokenpointer[i]);
+		if(type != -1){
+			//token = get_token();
+			return type;
+		}
+	}
 	
 	return UNKNOWN;
 }
 
+int iterate_token(string line, int x, int y, const char* tokens[]){
+	for(int i = 0; i < tokensizes[y]; i++)
+		if(line.substr(x, strlen(tokens[i])) == tokens[i])
+			return tokentype[y];
+	return -1;
+}
+
 int debug_type_token(int type_token){
-	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
+	cout << "TYPE TOKEN  : " << tokentypes[type_token] << endl;
 	cout << "POSITION    : " << line_index << endl;
 	cout << "LINE NUMBER : " << line_number << endl;
 	system("pause");
 	return type_token;
+}
+
+string get_token(){
+	
 }
 
 bool process_variables_attrib(char *line){ // begin function

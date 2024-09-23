@@ -45,7 +45,8 @@ MAIN TOKENS
 "{"   -> struct/vectors open  (also query string)
 "}"   -> struct/vectors close (also query string)
 "'"   -> strings open/close
-","   -> separator parameters
+","   -> separator
+"."   -> accessor
 
 -- OPERATOR SYMBOLS
 ":"  -> attributing
@@ -59,6 +60,8 @@ MAIN TOKENS
 "&"  -> and 
 "|"  -> or 
 "~"  -> not/else
+"?"  -> conditional
+"??" -> biconditional
 "="  -> equal
 ">"  -> is bigger than
 "<"  -> is less than
@@ -66,9 +69,15 @@ MAIN TOKENS
 "<=" -> is less/equal
 "<>" -> is different than
 
+-- ESCAPE CHARS
+"\n" -> break line
+"\t" -> tabulations
+"\v" -> vertical tabulation
+"\x" -> string colors
+
 -- SPECIAL SYMBOLS
 "!"  -> factorial
-"#"
+"#"  -> square root
 "§"
 ";"
 "ª"

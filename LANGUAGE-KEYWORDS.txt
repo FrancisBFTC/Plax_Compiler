@@ -31,6 +31,7 @@ MAIN TOKENS
 
 -- PREFIX SYMBOLS
 "@" -> variable
+"$" -> configuration
 
 -- DELIMITER SYMBOLS
 "<<<" -> comment open 
@@ -48,6 +49,7 @@ MAIN TOKENS
 
 -- OPERATOR SYMBOLS
 ":"  -> attributing
+"->" -> configuration
 "+"  -> add 
 "-"  -> sub 
 "\"  -> div
@@ -67,7 +69,6 @@ MAIN TOKENS
 -- SPECIAL SYMBOLS
 "!"  -> factorial
 "#"
-"$"
 "§"
 ";"
 "ª"

@@ -1,2 +1,7 @@
-use func of
-+ -
+@numero1	: 123
+@numero2	: hello[@var]
+@numero3	: @numero1+@numero2
+import[]
+const[]
+use
+

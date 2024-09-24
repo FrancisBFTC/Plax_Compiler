@@ -1710,8 +1710,6 @@ int get_subtypes(string token){
 	return OTHER;	
 }
 
-
->>>>>>> e6a4606b592419f63df11f2bb37ca0a2883e0515
 bool process_variables_attrib(char *line){ // begin function
 
     bool attrib = toString(line).find("@") < toString(line).find(":");

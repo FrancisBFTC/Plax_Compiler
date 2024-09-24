@@ -1552,14 +1552,6 @@ int iterate_token(string line, int x, int y, const char* tokens[]){
 	return -1;
 }
 
-void debug_type_token(int type_token, int line_index, string token){
-	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
-	cout << "POSITION    : " << line_index << endl;
-	cout << "LINE NUMBER : " << line_number << endl;
-	cout << "TOKEN       : " << token << endl; 
-	system("pause");
-}
-
 // TODO: ESTA FUNÇÃO DEVE RETORNAR UM INTEIRO DE SUB-TIPO DO TOKEN
 string get_token(int type, string line){
 	
@@ -1607,6 +1599,14 @@ string get_token(int type, string line){
 	line_index = index;
 	
 	return token;
+}
+
+void debug_type_token(int type_token, int line_index, string token){
+	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
+	cout << "POSITION    : " << line_index << endl;
+	cout << "LINE NUMBER : " << line_number << endl;
+	cout << "TOKEN       : " << token << endl; 
+	system("pause");
 }
 
 bool process_variables_attrib(char *line){ // begin function

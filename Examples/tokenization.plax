@@ -1,0 +1,6 @@
+if @var = 12 & @num <> 14 (
+	Show ['Ola mundo']
+) else (
+	MACROX
+)
+

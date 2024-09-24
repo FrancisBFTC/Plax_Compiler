@@ -1,7 +1,6 @@
-@numero1	: 123
-@numero2	: hello[@var]
-@numero3	: @numero1+@numero2
-import[]
-const[]
-use
+if @var = 12 & @num <> 14 (
+	Show ['Ola mundo']
+) else (
+	MACROX
+)
 

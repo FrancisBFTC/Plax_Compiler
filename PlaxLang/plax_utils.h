@@ -63,6 +63,7 @@ bool is_comment = false;
 bool is_color = false;
 bool is_constant = false;
 bool is_quote_open = false;
+bool is_use_command = false;
 // ----------------------------------------
 
 // Declarações de Protótipos
@@ -71,8 +72,10 @@ int get_token_type(string);
 int get_token_subtype(int, string);
 int get_token(int, string);
 int get_subtypes(string);
-void debug_token_type(int, int, int, string);
 int iterate_token(string, int, int, const char*[]);
+void debug_token_type(int, int, int, string);
+
+void Lexical_Analyzer(string);
 
 string getString(char*);
 string getstring(string, string, int);
@@ -100,25 +103,25 @@ void parsingConstant(char*);
 // ----------------------------------------
 #define OPERATORS_SIZE 	19
 const char* operators[] = {
+	"->",
     "*",
     "/",
     "+",
     "-",
 	"%",
 	"=",
-	">",
 	">=",
-	"<",
 	"<=",
 	"<>",
+	">",
+	"<",
 	"~",
     "^",
     "&",
     "|",
-	"?",
 	"??",
+	"?",
 	":",
-	"->"
 };
 
 #define PREFIX_SIZE 2
@@ -143,6 +146,12 @@ const char* delimiter[] = {
 	"\"",
 	",",
 	"."
+};
+
+#define DIFF_SYMBOLS 2
+const char* diff_symbols[] = {
+	"<",
+	">",
 };
 
 #define SPECIAL_SIZE 5
@@ -236,6 +245,11 @@ const char* subtypes[] = {
 	"SEPARATOR",
 	"CONDITIONAL",
 	"REPETITION",
+	"INCLUDE",
+	"DECLARATION",
+	"RETURN",
+	"PARAMETERS",
+	"CONVERSION",
 	"OTHER KEYWORD"
 };
 
@@ -284,6 +298,11 @@ enum SUB_TYPES {
 	SEPARATOR,
 	CONDITIONAL,
 	REPETITION,
+	INCLUDE,
+	DECLARATION,
+	RETURN,
+	PARAMETERS,
+	CONVERSION,
 	OTHER
 };
 
@@ -293,7 +312,7 @@ enum SYMBOL_TYPES {
 	BRACKET = 4,
 	ATTRIB = 17,
 	CONFIG_ATT = 18,
-	KEYS_OPEN = 8,
+	KEYS = 8,
 	QUOTE = 10,
 	DOUBLEQUOTE = 11
 };
@@ -1522,12 +1541,7 @@ bool Interpret_Commands(FILE *file){
     char line[1024];
     while((fgets(line, sizeof(line), file)) != NULL){
 
-		int type = 0;
-		int subtype = 0;
-		while(type != ENDLINE){
-			type = get_token_type(toString(line));
-			subtype = get_token(type, toString(line));
-		}
+		Lexical_Analyzer(toString(line));
 		/*
         // IGNORADOR DE COMENTÁRIOS (MACRO)
         ignore_comments(line, file)
@@ -1561,6 +1575,15 @@ bool Interpret_Commands(FILE *file){
     return true;
 }
 
+void Lexical_Analyzer(string line){
+	int type = 0;
+	int subtype = 0;
+	while(type != ENDLINE){
+		type = get_token_type(line);
+		subtype = get_token(type, line);
+	}
+}
+
 int get_token_type(string line){
 	
 	int x = line_index;
@@ -1590,21 +1613,13 @@ int iterate_token(string line, int x, int y, const char* tokens[]){
 		token_ind = i;
 		string tokstring = line.substr(x, token_len);
 		bool isRealToken = 	(line[x + token_len] == ' '  || line[x + token_len] == '[' ||
-							 line[x + token_len] == '\n' || line[x + token_len] == '\t') || token_len == 1;
+							 line[x + token_len] == '\n' || line[x + token_len] == '\t') || token_len == 1 &&
+							!(((line[x] == diff_symbols[0][0] || line[x] == diff_symbols[1][0]) && 
+							(line[x+1] == '=' || line[x+1] == '>') && y == 3));
 		if(tokstring == tokens[i] && isRealToken)
 			return tokentype[y];
 	}
 	return UNKNOWN;
-}
-
-
-void debug_token_type(int type_token, int subtype, int line_index, string token){
-	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
-	cout << "SUB TYPE    : " << subtypes[subtype] << endl;
-	cout << "TOKEN       : " << token << endl;
-	cout << "POSITION    : " << line_index << endl;
-	cout << "LINE NUMBER : " << line_number << endl; 
-	system("pause");
 }
 
 // TODO: ESTA FUNÇÃO DEVE RETORNAR UM INTEIRO DE SUB-TIPO DO TOKEN
@@ -1629,16 +1644,22 @@ int get_token(int type, string line){
 int get_token_subtype(int type, string line){
 	
 	// VARIÁVEIS PARA TOKENS QUE IDENTIFICA FINAL DA KEYWORD
-	char singlequote = delimiter[QUOTE][0];
-	char doublequote = delimiter[QUOTE+1][0];
-	char bracket = delimiter[BRACKET][0];
+	char singlequote   = delimiter[QUOTE][0];
+	char doublequote   = delimiter[QUOTE+1][0];
+	char bracket_open  = delimiter[BRACKET][0];
+	char bracket_close = delimiter[BRACKET+1][0];
+	char keys_open 	   = delimiter[KEYS][0];
+	char keys_close    = delimiter[KEYS+1][0];
+	char inc_close     = delimiter[3][0];
 	int index = line_index;
 	stringstream symbol;
 	
-	// VERIFICAR O TOKEN DESCONHECIDO
+	// VERIFICAR O TOKEN DESCONHECIDO PODENDO SER:
+	// TEXTO, NÚMERO, FUNÇÃO OU DEFINIÇÃO
 	if(type == UNKNOWN){
-		for(int i = 0; (line[index] != ' ' || is_quote_open) && line[index] != bracket && line[index] != '\n' && line[index] != '\t'; index++){
-			if(is_quote_open && (line[index] == singlequote || line[index] == doublequote)){
+		for(int i = 0; (line[index] != ' ' || is_quote_open) && line[index] != bracket_open && line[index] != bracket_close && 
+						line[index] != '\n' && line[index] != inc_close && line[index] != '\t'; index++){
+			if((is_quote_open && (line[index] == singlequote || line[index] == doublequote)) || line[index] == keys_open){
 				token = symbol.str();
 				line_index = index;
 				return TEXT;
@@ -1649,14 +1670,16 @@ int get_token_subtype(int type, string line){
 		line_index = index;
 		if(isNumber(token))
 			return NUMBER;
-		if(line[index] == bracket)
+		if(line[index] == bracket_open)
 			return FUNCTIONS;
 		while(line[index] == ' ' || line[index] == '\n' || line[index] == '\t'){
-			if(line[++index] == bracket)
+			if(line[++index] == bracket_open)
 				return FUNCTIONS;
 		}
 		return DEFINITION;
 	}else{
+		// VERIFICAR PREFIXOS, PODENDO SER: VARIÁVEIS, CONFIGURAÇÕES,
+		// OU, SÍMBOLOS DE DELIMITAÇÃO, OPERAÇÕES E PALAVRAS-CHAVE
 		const char** tokens = tokenpointer[type];
 		bool isPrefix = (tokens[token_ind] == prefix[VARIABLE]) || (tokens[token_ind] == prefix[CONFIG]);
 		if(isPrefix){
@@ -1675,7 +1698,7 @@ int get_token_subtype(int type, string line){
 			index += token_len;
 			symbol << line.substr(line_index, index-line_index);
 			token = symbol.str();
-			bool is_quote = (token[0] == singlequote || token[0] == doublequote);	
+			bool is_quote = (token[0] == singlequote || token[0] == doublequote);
 			is_quote_open = (is_quote) ? is_quote && !is_quote_open : is_quote_open;
 			line_index = index;
 			return get_subtypes(token);
@@ -1684,22 +1707,31 @@ int get_token_subtype(int type, string line){
 }
 
 int get_subtypes(string token){
-	for(int i = 0; i <= 4; i++)
+	bool is_use = (token == command[1] || token == delimiter[3] && is_use_command);
+	if((token == delimiter[2] || token == delimiter[3]) && is_use_command){
+		is_use_command = (is_use) ? is_use && !is_use_command : is_use_command;
+		return INCLUDE;
+	}
+	is_use_command = (is_use) ? is_use && !is_use_command : is_use_command;
+	for(int i = 1; i <= 5; i++)
 		if(token == operators[i])
 			return ARITHMETIC;
-	for(int i = 5; i <= 10; i++)
+	for(int i = 6; i <= 11; i++)
 		if(token == operators[i])
 			return RELATIONAL;
-	for(int i = 11; i <= 16; i++)	
+	for(int i = 12; i <= 17; i++)	
 		if(token == operators[i])
 			return LOGICAL;
-	if(token == operators[17] || token == operators[18])
+	for(int i = 7; i <= 14; i++)	
+		if(token == command[i])
+			return CONVERSION;
+	if(token == operators[0] || token == operators[18])
 		return ATTRIBUTION;
 	if(token == delimiter[0] || token == delimiter[1])
 		return COMMENTS;
 	if(token == delimiter[6] || token == delimiter[7])
 		return SCOPE;
-	if(token == delimiter[8] || token == delimiter[8])
+	if(token == delimiter[8] || token == delimiter[9])
 		return STRUCTS;
 	if(token == delimiter[12])
 		return SEPARATOR;
@@ -1707,7 +1739,24 @@ int get_subtypes(string token){
 		return CONDITIONAL;
 	if(token == command[17] || token == command[18])
 		return REPETITION;
+	if(token == command[0] || token == command[1])
+		return INCLUDE;
+	if(token == command[2])
+		return DECLARATION;
+	if(token == command[3])
+		return RETURN;
+	if(token == delimiter[4] || token == delimiter[5])
+		return PARAMETERS;
 	return OTHER;	
+}
+
+void debug_token_type(int type_token, int subtype, int line_index, string token){
+	cout << "TYPE TOKEN  : " << tokentypes[type_token+1] << endl;
+	cout << "SUB TYPE    : " << subtypes[subtype] << endl;
+	cout << "TOKEN       : " << token << endl;
+	cout << "POSITION    : " << line_index << endl;
+	cout << "LINE NUMBER : " << line_number << endl; 
+	system("pause");
 }
 
 bool process_variables_attrib(char *line){ // begin function

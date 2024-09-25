@@ -77,6 +77,11 @@ void debug_token_type(int, int, int, string);
 
 void Lexical_Analyzer(string);
 
+void (*func_ptr)();
+void variable_processing();
+void config_processing();
+void functions_processing();
+
 string getString(char*);
 string getstring(string, string, int);
 string getVariable(char*);
@@ -335,6 +340,22 @@ const char** tokenpointer[] = {
 	delimiter, operators, special, 
 	escape
 };
+
+int* operations[] = {
+	(int*)variable_processing, (int*)config_processing, (int*)functions_processing
+};
+
+void variable_processing(){
+	cout << "Processing variable token..." << endl;
+}
+
+void config_processing(){
+	cout << "Processing config token..." << endl;
+}
+
+void functions_processing(){
+	cout << "Processing functions token..." << endl;
+}
 // ----------------------------------------
 
 string getString(char *line)
@@ -1581,6 +1602,10 @@ void Lexical_Analyzer(string line){
 	while(type != ENDLINE){
 		type = get_token_type(line);
 		subtype = get_token(type, line);
+		if(subtype == VARIABLE || subtype == CONFIG || subtype == FUNCTIONS){
+			func_ptr = (void(*)())operations[subtype];
+			func_ptr();
+		}
 	}
 }
 

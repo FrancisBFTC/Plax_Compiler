@@ -77,6 +77,11 @@ void variable_proc();
 void config_proc();
 void functions_proc();
 void comment_proc();
+void declaration_proc();
+void conditional_proc();
+void repetition_proc();
+void call_proc();
+void intr_proc();
 void standard();
 
 string getString(char*);
@@ -348,8 +353,8 @@ const char** tokenpointer[] = {
 int* operations[] = {
 	(int*)variable_proc, (int*)config_proc, (int*)functions_proc, (int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)comment_proc,
-	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
-	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)conditional_proc,(int*)repetition_proc,(int*)standard,(int*)declaration_proc,(int*)standard,
+	(int*)standard,(int*)standard,(int*)call_proc,(int*)intr_proc,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 };
@@ -363,16 +368,33 @@ void variable_proc(){
 	if(is_attrib){
 		// TODO: PARSER DE VALORES E EXPRESSÕES
 		cout << "Atributing data..." << endl;
+		
+		//is_attrib = false;
 	}else if(is_cond_command){
 		// TODO: PARSER DE COMPARAÇÕES E EXPRESSÕES
+		cout << "Conditions reading..." << endl;
+		
+		//is_cond_command = false;
 	}else if(is_func_command){
 		// TODO: PARSER DE PARÂMETROS DE FUNÇÕES
+		cout << "Parameters reading..." << endl;
+		
+		//is_func_command = false;
 	}else if(is_call_function){
 		// TODO: PARSER DE ARGUMENTOS DE FUNÇÕES
+		cout << "Arguments reading..." << endl;
+		
+		//is_call_function = false;
 	}else if(is_call_command){
 		// TODO: PARSER DE CALLS EXTERNOS E REGISTRADORES
+		cout << "Register args reading for CALL" << endl;
+		
+		//is_call_command = false;
 	}else if(is_intr_command){
 		// TODO: PARSER DE INTERRUPÇÕES E REGISTRADORES
+		cout << "Register args reading for INTR" << endl;
+		
+		//is_intr_command = false;
 	}else{
 		cout << error_variable << line_temp << endl;
 		is_error = true;
@@ -385,11 +407,44 @@ void config_proc(){
 
 void functions_proc(){
 	cout << "Processing functions token..." << endl;
+	is_error = false;
+	typetok = get_token_type(toString(line));
+	subtype = get_token(typetok, toString(line));
+	is_call_function = typetok == DELIMITER && subtype == PARAMETERS;
 }
 
-void standard(){
-	//cout << "Standard test..." << endl;
+void declaration_proc(){
+	cout << "Processing func token..." << endl;
+	is_error = false;
+	is_func_command = typetok == COMMAND && subtype == DECLARATION;
 }
+
+void conditional_proc(){
+	cout << "Processing IF token..." << endl;
+	is_error = false;
+	is_cond_command = typetok == COMMAND && subtype == CONDITIONAL;
+}
+
+void repetition_proc(){
+	cout << "Processing WHILE token..." << endl;
+	is_error = false;
+	is_cond_command = typetok == COMMAND && subtype == REPETITION;
+}
+
+// -----------------------------------------------------------------------------
+// Funções pendentes para subtipos
+void call_proc(){
+	cout << "Processing call token..." << endl;
+	is_error = false;
+	is_call_command = typetok == COMMAND && subtype == 0;	// analisar
+}
+
+void intr_proc(){
+	cout << "Processing intr token..." << endl;
+	is_error = false;
+	is_intr_command = typetok == COMMAND && subtype == 0;	// analisar
+}
+// -----------------------------------------------------------------------------
 
 void comment_proc(){
 	is_error = false;
@@ -404,6 +459,10 @@ void comment_proc(){
 	}
 	cout << error_comment << line_temp << endl;
 	is_error = true;
+}
+
+void standard(){
+	//cout << "Standard test..." << endl;
 }
 // ----------------------------------------
 

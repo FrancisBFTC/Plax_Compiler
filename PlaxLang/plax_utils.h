@@ -3,27 +3,9 @@
 
 #include "c_utils.h"
 
-#define ignore_comments(line, file)\
-        if(contains(line, "<<<") || contains(line, ">>>")){ \
-            string lineComm = toString(line); \
-            int j = 0; \
-            while(lineComm[j] == ' ' || lineComm[j] == 0x09) j++; \
-\
-            if(lineComm[j] == '<' && lineComm[j+1] == '<' && lineComm[j+1] == '<'){ \
-                is_comment = true; \
-                fgets(line, sizeof(line), file); \
-            } \
-            for(; lineComm[j] != '\n'; j++){\
-                if(lineComm[j] == '>' && lineComm[j+1] == '>' && lineComm[j+1] == '>')\
-                    is_comment = false;\
-            } \
-            if(contains(line, ">>>") && lineComm.find("<<<") == -1) \
-                fgets(line, sizeof(line), file); \
-        } \
-
 // Objetos do compilador
 json assembly;
-
+FILE* plaxfile;
 // Variáveis String
 // ----------------------------------------
 string str;
@@ -32,6 +14,7 @@ string func_name;
 string type;
 string tokenfunc;
 string token;
+
 // ----------------------------------------
 
 // Variáveis inteiros
@@ -49,12 +32,15 @@ int bss = 0;
 int index_symbol = 0;
 int line_index = 0;
 int line_number = 1;
+int line_temp 	= 0;
 int token_len   = 0;
 int token_ind 	= 0;
+int typetok 	= 0;
+int subtype 	= 0;
 // ----------------------------------------
 
 
-// Variáveis booleanas
+// Variáveis booleanas e estados
 // ----------------------------------------
 bool is_func = false;
 bool reading_func = false;
@@ -62,8 +48,18 @@ bool use_all = false;
 bool is_comment = false;
 bool is_color = false;
 bool is_constant = false;
+
+// Estados do Parser ----------------------
 bool is_quote_open = false;
 bool is_use_command = false;
+bool is_comment_open = false;
+bool is_attrib = false;
+bool is_cond_command = false;
+bool is_func_command = false;
+bool is_call_function = false;
+bool is_call_command = false;
+bool is_intr_command = false;
+bool is_error = false;
 // ----------------------------------------
 
 // Declarações de Protótipos
@@ -75,12 +71,13 @@ int get_subtypes(string);
 int iterate_token(string, int, int, const char*[]);
 void debug_token_type(int, int, int, string);
 
-void Lexical_Analyzer(string);
-
+void Lexical_Analyzer();
 void (*func_ptr)();
-void variable_processing();
-void config_processing();
-void functions_processing();
+void variable_proc();
+void config_proc();
+void functions_proc();
+void comment_proc();
+void standard();
 
 string getString(char*);
 string getstring(string, string, int);
@@ -103,6 +100,11 @@ void setTypeVars(string, int, int, int);
 void parsingConstant(char*);
 
 // ----------------------------------------
+
+// Vetores de chars
+char line[1024];
+const string error_comment  = "Error Syntax: It's missing comment close symbol! In line -> ";
+const string error_variable = "Error Syntax: Alone variable(s) no keyword or assignment associated! In line -> ";
 
 // Estruturas e Arrays
 // ----------------------------------------
@@ -230,7 +232,8 @@ const char* tokentypes[] = {
 	"OPERATOR",
 	"SPECIAL",
 	"ESCAPE",
-	"ENDLINE"
+	"ENDLINE",
+	"ENDFILE"
 };
 
 const char* subtypes[] = {
@@ -283,7 +286,8 @@ enum TYPE_TOKEN {
 	OPERATOR,
 	SPECIAL,
 	ESCAPE,
-	ENDLINE
+	ENDLINE,
+	ENDFILE
 };
 
 enum SUB_TYPES {
@@ -342,19 +346,64 @@ const char** tokenpointer[] = {
 };
 
 int* operations[] = {
-	(int*)variable_processing, (int*)config_processing, (int*)functions_processing
+	(int*)variable_proc, (int*)config_proc, (int*)functions_proc, (int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)comment_proc,
+	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 };
 
-void variable_processing(){
+void variable_proc(){
 	cout << "Processing variable token..." << endl;
+	is_error = false;
+	typetok = get_token_type(toString(line));
+	subtype = get_token(typetok, toString(line));
+	is_attrib = typetok == OPERATOR && subtype == ATTRIBUTION;
+	if(is_attrib){
+		// TODO: PARSER DE VALORES E EXPRESSÕES
+		cout << "Atributing data..." << endl;
+	}else if(is_cond_command){
+		// TODO: PARSER DE COMPARAÇÕES E EXPRESSÕES
+	}else if(is_func_command){
+		// TODO: PARSER DE PARÂMETROS DE FUNÇÕES
+	}else if(is_call_function){
+		// TODO: PARSER DE ARGUMENTOS DE FUNÇÕES
+	}else if(is_call_command){
+		// TODO: PARSER DE CALLS EXTERNOS E REGISTRADORES
+	}else if(is_intr_command){
+		// TODO: PARSER DE INTERRUPÇÕES E REGISTRADORES
+	}else{
+		cout << error_variable << line_temp << endl;
+		is_error = true;
+	}
 }
 
-void config_processing(){
+void config_proc(){
 	cout << "Processing config token..." << endl;
 }
 
-void functions_processing(){
+void functions_proc(){
 	cout << "Processing functions token..." << endl;
+}
+
+void standard(){
+	//cout << "Standard test..." << endl;
+}
+
+void comment_proc(){
+	is_error = false;
+	while(typetok != ENDFILE){
+		typetok = get_token_type(toString(line));
+		subtype = get_token(typetok, toString(line));
+		if(token == delimiter[1] && subtype == COMMENTS)
+			return;
+		if(typetok == ENDLINE || line[line_index] == 0)
+			if(fgets(line, sizeof(line), plaxfile) == NULL)
+				typetok = ENDFILE;
+	}
+	cout << error_comment << line_temp << endl;
+	is_error = true;
 }
 // ----------------------------------------
 
@@ -1559,10 +1608,14 @@ string execFunction(string name){
 }
 
 bool Interpret_Commands(FILE *file){
-    char line[1024];
+	plaxfile = file;
+	typetok = 0;
+	subtype = 0;
     while((fgets(line, sizeof(line), file)) != NULL){
 
-		Lexical_Analyzer(toString(line));
+		Lexical_Analyzer();
+		if(is_error)
+			return false;
 		/*
         // IGNORADOR DE COMENTÁRIOS (MACRO)
         ignore_comments(line, file)
@@ -1596,16 +1649,17 @@ bool Interpret_Commands(FILE *file){
     return true;
 }
 
-void Lexical_Analyzer(string line){
-	int type = 0;
-	int subtype = 0;
-	while(type != ENDLINE){
-		type = get_token_type(line);
-		subtype = get_token(type, line);
-		if(subtype == VARIABLE || subtype == CONFIG || subtype == FUNCTIONS){
+void Lexical_Analyzer(){
+	typetok = 0, subtype = 0;
+	while(typetok != ENDLINE && typetok != ENDFILE){
+		typetok = get_token_type(toString(line));
+		subtype = get_token(typetok, toString(line));
+		if(typetok != ENDLINE && typetok != ENDFILE){
 			func_ptr = (void(*)())operations[subtype];
 			func_ptr();
 		}
+		if(is_error)
+			return;
 	}
 }
 
@@ -1618,13 +1672,15 @@ int get_token_type(string line){
 	line_index = x;
 	
 	// PRIMEIRO VERIFICA SE É FIM DE LINHA OU ARQUIVO
-	if(line[x] == '\n' || line[x] == 0 || line[x] == EOF)
+	if(line[x] == '\n')
 		return ENDLINE;
+	if(line[x] == 0 || line[x] == EOF)
+		return ENDFILE;
 	
 	// ITERA PELOS TIPOS PRINCIPAIS DE TOKENS
 	for(int i = 0; i < TOKENPOINTER_SIZE; i++){
 		int type = iterate_token(line, x, i, tokenpointer[i]);
-		if(type != -1)
+		if(type != UNKNOWN)
 			return type;
 	}
 	
@@ -1647,21 +1703,23 @@ int iterate_token(string line, int x, int y, const char* tokens[]){
 	return UNKNOWN;
 }
 
-// TODO: ESTA FUNÇÃO DEVE RETORNAR UM INTEIRO DE SUB-TIPO DO TOKEN
+// ESTA FUNÇÃO RETORNA UM INTEIRO DE SUB-TIPO DO TOKEN
 int get_token(int type, string line){
-	
+	line_temp = line_number;
 	// SE FOR FIM DE LINHA, INTERROMPA
-	if(type == ENDLINE){ 
+	if(type == ENDLINE){
 		line_index = 0; 
 		line_number++;
-		return ENDLINE;
+		return type;
 	}
+	if(type == ENDFILE)
+		return type;
 	
 	// ATRIBUI O TOKEN E IDENTIFICA SUB-CATEGORIA
 	int subtype = get_token_subtype(type, line);
 
 	// DEPURA AS INFORMAÇÕES NO TERMINAL
-	debug_token_type(type, subtype, line_index, token);
+	//debug_token_type(type, subtype, line_index, token);
 	
 	return subtype;
 }

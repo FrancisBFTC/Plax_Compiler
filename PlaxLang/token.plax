@@ -1,0 +1,11 @@
+<<< This is a Plax program
+@var : 1
+Show['Ola mundo']
+>>>
+$config -> 'gui'
+@oi : 'Oi'
+
+<<<
+	Syntax errors
+>>>
+@var : 2

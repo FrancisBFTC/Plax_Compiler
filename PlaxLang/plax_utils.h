@@ -70,9 +70,10 @@ int get_token(int, string);
 int get_subtypes(string);
 int iterate_token(string, int, int, const char*[]);
 void debug_token_type(int, int, int, string);
+void debug_msg(string);
 
 bool get_state(int, int);
-bool end_state();
+bool end_state(int);
 
 void Lexical_Analyzer();
 void Tokenize();
@@ -118,6 +119,7 @@ void parsingConstant(char*);
 char line[1024];
 const string error_comment  = "Error Syntax: It's missing comment close symbol! In line -> ";
 const string error_variable = "Error Syntax: Alone variable(s) no keyword or assignment associated! In line -> ";
+const string error_math = "Error Syntax: cannot do math operations with strings! In line -> ";
 
 // Estruturas e Arrays
 // ----------------------------------------
@@ -329,6 +331,7 @@ enum SUB_TYPES {
 	CONVERSION,
 	EXTERNINT,
 	EXTERNCALL,
+	SINGLEQUOTE,
 	OTHER
 };
 
@@ -372,7 +375,7 @@ int* operations[] = {
 };
 
 void variable_proc(){
-	cout << "Processing variable token..." << endl;
+	debug_msg("Processing variable token...");
 	is_error = false;
 	Tokenize();
 	
@@ -381,32 +384,32 @@ void variable_proc(){
 	
 	if(is_attrib){
 		// TODO: PARSER DE VALORES E EXPRESSÕES
-		cout << "Atributing data..." << endl;
-		is_attrib = end_state();
+		debug_msg("Atributing data...");
+		is_attrib = end_state(ENDLINE);
 		Parser();
 	}else if(is_cond_command){
 		// TODO: PARSER DE COMPARAÇÕES E EXPRESSÕES
-		cout << "Conditions reading..." << endl;
+		debug_msg("Conditions reading...");
 		
 		//is_cond_command = false;
 	}else if(is_func_command){
 		// TODO: PARSER DE PARÂMETROS DE FUNÇÕES
-		cout << "Parameters reading..." << endl;
+		debug_msg("Parameters reading...");
 		
 		//is_func_command = false;
 	}else if(is_call_function){
 		// TODO: PARSER DE ARGUMENTOS DE FUNÇÕES
-		cout << "Arguments reading..." << endl;
+		debug_msg("Arguments reading...");
 		
 		//is_call_function = false;
 	}else if(is_call_command){
 		// TODO: PARSER DE CALLS EXTERNOS E REGISTRADORES
-		cout << "Register args reading for CALL" << endl;
+		debug_msg("Register args reading for CALL");
 		
 		//is_call_command = false;
 	}else if(is_intr_command){
 		// TODO: PARSER DE INTERRUPÇÕES E REGISTRADORES
-		cout << "Register args reading for INTR" << endl;
+		debug_msg("Register args reading for INTR");
 		
 		//is_intr_command = false;
 	}else{
@@ -416,32 +419,32 @@ void variable_proc(){
 }
 
 void config_proc(){
-	cout << "Processing config token..." << endl;
+	debug_msg("Processing config token...");
 	is_error = false;
 	Tokenize();
 }
 
 void functions_proc(){
-	cout << "Processing functions token..." << endl;
+	debug_msg("Processing functions token...");
 	is_error = false;
 	Tokenize();
 	is_call_function = get_state(DELIMITER, PARAMETERS);
 }
 
 void declaration_proc(){
-	cout << "Processing func token..." << endl;
+	debug_msg("Processing func token...");
 	is_error = false;
 	is_func_command = get_state(COMMAND, DECLARATION);
 }
 
 void conditional_proc(){
-	cout << "Processing IF token..." << endl;
+	debug_msg("Processing IF token...");
 	is_error = false;
 	is_cond_command = get_state(COMMAND, CONDITIONAL);
 }
 
 void repetition_proc(){
-	cout << "Processing WHILE token..." << endl;
+	debug_msg("Processing WHILE token...");
 	is_error = false;
 	is_cond_command = get_state(COMMAND, REPETITION);
 }
@@ -449,29 +452,29 @@ void repetition_proc(){
 // -----------------------------------------------------------------------------
 // Funções pendentes para subtipos
 void call_proc(){
-	cout << "Processing call token..." << endl;
+	debug_msg("Processing call token...");
 	is_error = false;
 	is_call_command = get_state(COMMAND, EXTERNCALL);
 }
 
 void intr_proc(){
-	cout << "Processing intr token..." << endl;
+	debug_msg("Processing intr token...");
 	is_error = false;
 	is_intr_command = get_state(COMMAND, EXTERNINT);
 }
 
 void arithmetic_proc(){
-	cout << "Processing math token..." << endl;
+	debug_msg("Processing math token...");
 	is_error = false;
 	Tokenize();
-	is_error = (subtype == TEXT);
-	if (is_error)
-		cout << "Error Syntax: cannot do math operations with strings! In line -> " << line_temp << endl;
 	Parser();
+	is_error = (subtype == SINGLEQUOTE);
+	if (is_error)
+		cout << error_math << line_temp << endl;
 }
 
 void attribution_proc(){
-	cout << "Processing attrib token..." << endl;
+	debug_msg("Processing attrib token...");
 	is_error = false;
 	Tokenize();
 	Parser();
@@ -1932,6 +1935,8 @@ int get_subtypes(string token){
 		return EXTERNINT;
 	if(token == command[6])
 		return EXTERNCALL;
+	if(token == delimiter[10])
+		return SINGLEQUOTE;
 	return OTHER;	
 }
 
@@ -1939,8 +1944,8 @@ bool get_state(int type, int subtok){
 	return (typetok == type && subtype == subtok); 
 }
 
-bool end_state(){
-	return !(typetok == ENDLINE);
+bool end_state(int condition){
+	return !(typetok == condition);
 }
 
 void debug_token_type(int type_token, int subtype, int line_index, string token){
@@ -1950,6 +1955,10 @@ void debug_token_type(int type_token, int subtype, int line_index, string token)
 	cout << "POSITION    : " << line_index << endl;
 	cout << "LINE NUMBER : " << line_number << endl; 
 	system("pause");
+}
+
+void debug_msg(string msg){
+	cout << msg << endl;
 }
 
 bool process_variables_attrib(char *line){ // begin function

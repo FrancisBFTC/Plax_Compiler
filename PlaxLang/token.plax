@@ -3,5 +3,5 @@
 Show['Ola mundo']
 >>>
 
-@Str : @Num @Oi
+@Str : 'Hello'
 

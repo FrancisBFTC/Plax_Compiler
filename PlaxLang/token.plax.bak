@@ -1,6 +1,0 @@
-<<< This is a Plax program
-@var : 1
-Show['Ola mundo']
->>>
-
-call @Str

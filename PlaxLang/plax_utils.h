@@ -72,9 +72,11 @@ int iterate_token(string, int, int, const char*[]);
 void debug_token_type(int, int, int, string);
 
 bool get_state(int, int);
+bool end_state();
 
 void Lexical_Analyzer();
 void Tokenize();
+void Parser();
 
 void (*func_ptr)();
 void variable_proc();
@@ -86,6 +88,8 @@ void conditional_proc();
 void repetition_proc();
 void call_proc();
 void intr_proc();
+void arithmetic_proc();
+void attribution_proc();
 void standard();
 
 string getString(char*);
@@ -360,7 +364,7 @@ const char** tokenpointer[] = {
 
 int* operations[] = {
 	(int*)variable_proc, (int*)config_proc, (int*)functions_proc, (int*)standard,
-	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)comment_proc,
+	(int*)standard,(int*)standard,(int*)arithmetic_proc,(int*)standard,(int*)standard,(int*)attribution_proc,(int*)comment_proc,
 	(int*)standard,(int*)standard,(int*)standard,(int*)conditional_proc,(int*)repetition_proc,(int*)standard,(int*)declaration_proc,(int*)standard,
 	(int*)standard,(int*)standard,(int*)intr_proc,(int*)call_proc,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
@@ -371,12 +375,15 @@ void variable_proc(){
 	cout << "Processing variable token..." << endl;
 	is_error = false;
 	Tokenize();
-	is_attrib = get_state(OPERATOR, ATTRIBUTION);
+	
+	if(!is_attrib)
+		is_attrib = get_state(OPERATOR, ATTRIBUTION);
+	
 	if(is_attrib){
 		// TODO: PARSER DE VALORES E EXPRESSÕES
 		cout << "Atributing data..." << endl;
-		
-		//is_attrib = false;
+		is_attrib = end_state();
+		Parser();
 	}else if(is_cond_command){
 		// TODO: PARSER DE COMPARAÇÕES E EXPRESSÕES
 		cout << "Conditions reading..." << endl;
@@ -451,6 +458,23 @@ void intr_proc(){
 	cout << "Processing intr token..." << endl;
 	is_error = false;
 	is_intr_command = get_state(COMMAND, EXTERNINT);
+}
+
+void arithmetic_proc(){
+	cout << "Processing math token..." << endl;
+	is_error = false;
+	Tokenize();
+	is_error = (subtype == TEXT);
+	if (is_error)
+		cout << "Error Syntax: cannot do math operations with strings! In line -> " << line_temp << endl;
+	Parser();
+}
+
+void attribution_proc(){
+	cout << "Processing attrib token..." << endl;
+	is_error = false;
+	Tokenize();
+	Parser();
 }
 // -----------------------------------------------------------------------------
 
@@ -1719,10 +1743,7 @@ void Lexical_Analyzer(){
 	typetok = 0, subtype = 0;
 	while(typetok != ENDLINE && typetok != ENDFILE){
 		Tokenize();
-		if(typetok != ENDLINE && typetok != ENDFILE){
-			func_ptr = (void(*)())operations[subtype];
-			func_ptr();
-		}
+		Parser();
 		if(is_error)
 			return;
 	}
@@ -1731,6 +1752,13 @@ void Lexical_Analyzer(){
 void Tokenize(){
 	typetok = get_token_type(toString(line));
 	subtype = get_token(typetok, toString(line));
+}
+
+void Parser(){
+	if(typetok != ENDLINE && typetok != ENDFILE){
+		func_ptr = (void(*)())operations[subtype];
+		func_ptr();
+	}
 }
 
 int get_token_type(string line){
@@ -1909,6 +1937,10 @@ int get_subtypes(string token){
 
 bool get_state(int type, int subtok){
 	return (typetok == type && subtype == subtok); 
+}
+
+bool end_state(){
+	return !(typetok == ENDLINE);
 }
 
 void debug_token_type(int type_token, int subtype, int line_index, string token){

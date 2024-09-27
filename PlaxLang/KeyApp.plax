@@ -1,0 +1,9 @@
+use * of <IKeyListener>
+
+@KeyPress : func (
+	Show['Tecla pressionada!']
+)
+
+@KeyRelease : func (
+	Show['Tecla solta!']
+)

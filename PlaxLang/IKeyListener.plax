@@ -1,0 +1,10 @@
+@KeyPress 	: func ( )
+@KeyRelease	: func ( )
+
+func IKeyListener @KeyPress : func (), @KeyRelease: func ()
+(
+	if getKeyPress[] = true ( KeyPress[] )
+	if getKeyRelease[] = true ( KeyRelease[] )
+)
+
+IKeyListener [@KeyPress, @KeyRelease]

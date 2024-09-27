@@ -3,4 +3,4 @@
 Show['Ola mundo']
 >>>
 
-intr @Str
+call @Str

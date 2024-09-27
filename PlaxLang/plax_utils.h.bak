@@ -362,7 +362,7 @@ int* operations[] = {
 	(int*)variable_proc, (int*)config_proc, (int*)functions_proc, (int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)comment_proc,
 	(int*)standard,(int*)standard,(int*)standard,(int*)conditional_proc,(int*)repetition_proc,(int*)standard,(int*)declaration_proc,(int*)standard,
-	(int*)standard,(int*)standard,(int*)intr_proc,(int*)call_proc,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
+	(int*)standard,(int*)standard,(int*)standard,(int*)intr_proc,(int*)call_proc,(int*)standard,(int*)standard,(int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 	(int*)standard,(int*)standard,(int*)standard,(int*)standard,
 };

@@ -2,4 +2,5 @@
 @var : 1
 Show['Ola mundo']
 >>>
-@num : 2 + 'Ola'
+@num1 : if @var = 2 return @var ~ return 3
+@num2 : if @var = 3 return @var ~ return 4
